@@ -35,31 +35,42 @@ is_external: false
 # Number of concurrent services allowed to run at the same time
 licence_count: 1
 
-#update_config:
-#  generates_signatures: true
 
 # Service heuristic blocks: List of heuristics object that define the different heuristics used in the service
 heuristics:
   - heur_id: 1
-    name: Critical alert
+    name: Sigma Critical alert
     score: 1000
     filetype: '*'
     description: Sigma hit
   - heur_id: 2
-    name: High alert
+    name: Sigma High alert
     score: 1000
     filetype: '*'
     description: Sigma hit
   - heur_id: 3
-    name: Medium alert
+    name: Sigma Medium alert
     score: 500
     filetype: '*'
     description: Sigma hit
   - heur_id: 4
-    name: Low alert
+    name: Sigma Low alert
     score: 250
     filetype: '*'
     description: Sigma hit
+
+update_config:
+  generates_signatures: true
+  method: run
+  run_options:
+    allow_internet_access: true
+    command: ["python", "-m", "sigma_updater"]
+    image: ${REGISTRY}cccs/assemblyline-service-suricata:$SERVICE_TAG
+  sources:
+    - name: sigma
+      pattern: .*\.yml
+      uri: https://github.com/Neo23x0/sigma
+  update_interval_seconds: 21600 # Quarter-day (every 6 hours)
 
 # Docker configuration block which defines:
 #  - the name of the docker container that will be created
