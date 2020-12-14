@@ -9,6 +9,7 @@ import time
 from typing import List, Dict, Any
 from urllib.parse import urlparse
 from zipfile import ZipFile
+from yaml.composer import ComposerError
 
 import certifi
 import requests
@@ -176,13 +177,18 @@ def git_clone_repo(source: Dict[str, Any], previous_update=None) -> List:
                 return []
             break
 
-    if pattern:
-        files = [(os.path.join(clone_dir, f), get_sha256_for_file(f))
-                 for f in os.listdir(clone_dir) if re.match(pattern, f)]
-    else:
-        files = [(f, get_sha256_for_file(f)) for f in glob.glob(os.path.join(clone_dir, '*.yml*'))]
+    sigma_files = []
+    for path_in_dir, _, files in os.walk(clone_dir):
+        for filename in files:
+            filepath = os.path.join(clone_dir, path_in_dir, filename)
+            if pattern:
+                if re.match(pattern, filename):
+                    sigma_files.append((filepath, get_sha256_for_file(filepath)))
+            else:
+                if re.match(R'.*\.yml', filename):
+                    sigma_files.append((filepath, get_sha256_for_file(filepath)))
 
-    return files
+    return sigma_files
 
 
 def sigma_update() -> None:
@@ -248,7 +254,12 @@ def sigma_update() -> None:
                 total_imported = 0
                 default_classification = source_default_classification[source]
                 for file in source_val.keys():
-                    total_imported += sigma_importer.import_file(file, source, default_classification=default_classification)
+                    try:
+                        total_imported += sigma_importer.import_file(file, source, default_classification=default_classification)
+                    except ValueError:
+                        LOGGER.warning(f"{file} failed to import due to a Sigma error")
+                    except ComposerError:
+                        LOGGER.warning(f"{file} failed to import due to a YAML-parsing error")
                 LOGGER.info(f"{total_imported} signatures were imported for source {source}")
 
         else:

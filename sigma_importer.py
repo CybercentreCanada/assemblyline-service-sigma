@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import List
 import yaml
 
 from assemblyline.common import forge
@@ -26,8 +25,10 @@ class SigmaImporter:
         self.log = logger
 
     def _save_signatures(self, signature, source, cur_file, default_classification=None):
-        signature_string = signature.readlines()
+        signature.seek(0)
+        signature_string = signature.read()
         signature_yaml = yaml.safe_load(signature_string)
+
 
         order = 1
         upload_list = []
@@ -59,14 +60,14 @@ class SigmaImporter:
         self.log.info(f"Importing file: {file_path}")
         cur_file = os.path.expanduser(file_path)
         if os.path.exists(cur_file):
-            try:
-                with open(file_path) as f:
+            with open(file_path) as f:
+                try:
                     ps.add_signature(f)
-                    return self._save_signatures(f, source, cur_file,
-                                                 default_classification=default_classification)
-            except:
-                pass #TODO: complain that sigma_signature won't take that file
+                except ValueError as e:
+                    raise ValueError(f'File {cur_file} cannot be used in sigma')
 
+                return self._save_signatures(f, source, cur_file,
+                                         default_classification=default_classification)
 
         else:
             raise Exception(f"File {cur_file} does not exists.")
