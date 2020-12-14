@@ -15,8 +15,8 @@ class SigmaImporter:
     def __init__(self, al_client, logger=None):
         if not logger:
             from assemblyline.common import log as al_log
-            al_log.init_logging('suricata_importer')
-            logger = logging.getLogger('assemblyline.suricata_importer')
+            al_log.init_logging('sigma_importer')
+            logger = logging.getLogger('assemblyline.sigma_importer')
             logger.setLevel(logging.INFO)
 
         self.update_client = al_client
@@ -50,7 +50,7 @@ class SigmaImporter:
         upload_list.append(sig.as_primitives())
         order += 1
 
-        r = self.update_client.signature.add_update_many(source, 'suricata', upload_list, dedup_name=False)
+        r = self.update_client.signature.add_update_many(source, 'sigma', upload_list, dedup_name=False)
         self.log.info(f"Imported {r['success']}/{order - 1} signatures"
                       f" from {os.path.basename(cur_file)} into Assemblyline")
 
