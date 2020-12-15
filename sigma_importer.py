@@ -61,10 +61,7 @@ class SigmaImporter:
         cur_file = os.path.expanduser(file_path)
         if os.path.exists(cur_file):
             with open(file_path) as f:
-                try:
-                    ps.add_signature(f)
-                except ValueError as e:
-                    raise ValueError(f'File {cur_file} cannot be used in sigma')
+                ps.add_signature(f)
 
                 return self._save_signatures(f, source, cur_file,
                                          default_classification=default_classification)

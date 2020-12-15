@@ -21,6 +21,7 @@ from assemblyline.common import log as al_log, forge
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.isotime import iso_to_epoch
 from sigma_importer import SigmaImporter
+from sigma_signature.pysigma import val_file
 
 al_log.init_logging('updater.sigma')
 classification = forge.get_classification()
@@ -114,7 +115,7 @@ def url_download(source: Dict[str, Any], previous_update=None) -> List:
                     for filename in files:
                         filepath = os.path.join(extract_dir, path_in_dir, filename)
                         if pattern:
-                            if re.match(pattern, filename):
+                            if re.match(pattern, filepath):
                                 rules_files.add(filepath)
                         else:
                             rules_files.add(filepath)
@@ -182,10 +183,10 @@ def git_clone_repo(source: Dict[str, Any], previous_update=None) -> List:
         for filename in files:
             filepath = os.path.join(clone_dir, path_in_dir, filename)
             if pattern:
-                if re.match(pattern, filename):
+                if re.match(pattern, filepath):
                     sigma_files.append((filepath, get_sha256_for_file(filepath)))
             else:
-                if re.match(R'.*\.yml', filename):
+                if re.match(R'.*\.yml', filepath):
                     sigma_files.append((filepath, get_sha256_for_file(filepath)))
 
     return sigma_files
@@ -237,13 +238,19 @@ def sigma_update() -> None:
                 for file, sha256 in files:
                     files_sha256.setdefault(source_name, {})
                     if previous_hash.get(source_name, {}).get(file, None) != sha256:
-                        files_sha256[source_name][file] = sha256
+                        if val_file(file):
+                            files_sha256[source_name][file] = sha256
+                        else:
+                            LOGGER.warning(f"{file} was not imported due to failed validation")
             else:
                 files = url_download(source, previous_update=previous_update)
                 for file, sha256 in files:
                     files_sha256.setdefault(source_name, {})
                     if previous_hash.get(source_name, {}).get(file, None) != sha256:
-                        files_sha256[source_name][file] = sha256
+                        if val_file(file):
+                            files_sha256[source_name][file] = sha256
+                        else:
+                            LOGGER.warning(f"{file} was not imported due to failed validation")
 
         if files_sha256:
             LOGGER.info("Found new Sigma rule files to process!")
