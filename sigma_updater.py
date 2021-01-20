@@ -42,7 +42,6 @@ def add_cacert(cert: str):
 
 def url_download(source: Dict[str, Any], previous_update=None) -> List:
     """
-
     :param source:
     :param previous_update:
     :return:
@@ -254,9 +253,7 @@ def sigma_update() -> None:
 
         if files_sha256:
             LOGGER.info("Found new Sigma rule files to process!")
-
             sigma_importer = SigmaImporter(al_client, logger=LOGGER)
-
             for source, source_val in files_sha256.items():
                 total_imported = 0
                 default_classification = source_default_classification[source]
