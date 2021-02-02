@@ -76,7 +76,7 @@ update_config:
 #  - the name of the docker container that will be created
 #  - cpu and ram allocation by the container
 docker_config:
-  image: cccs/assemblyline-service-sigma:$SERVICE_TAG
+  image: ${REGISTRY}cccs/assemblyline-service-sigma:$SERVICE_TAG
   cpu_cores: 1.0
   ram_mb: 1024
 
