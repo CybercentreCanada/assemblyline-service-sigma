@@ -81,11 +81,12 @@ class Sigma(ServiceBase):
         self.hits = []  # clear the hits list
         path = request.file_path
         file_name = request.file_name
+        self.log.info(f" executing {file_name}")
         if file_name.endswith('evtx'):
             self.sigma_parser.register_callback(self.sigma_hit)
             # TODO cProfile.runctx('self.sigma_parser.check_logfile(path)', globals(), locals(),)
             self.sigma_parser.check_logfile(path)
-
+            self.log.info("in evtx")
             if len(self.hits) > 0:
                 hit_section = ResultSection('Events detected as suspicious')
                 for alert, event in self.hits:
