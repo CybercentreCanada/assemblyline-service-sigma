@@ -12,7 +12,7 @@ stages:
 - stage: deploy
   jobs:
   - job: deploy
-    displayName: Deploy containers to github dockerhub
+    displayName: Deploy containers to  dockerhub
     variables:
       - group: deployment-information
     steps:
