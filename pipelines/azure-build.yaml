@@ -25,7 +25,7 @@ stages:
         set -xv  # Echo commands before they are run
         export TAG=${BUILD_SOURCEBRANCH#"refs/tags/v"}
         if [[ "$TAG" == *stable* ]]; then export BUILD_TYPE=stable; else export BUILD_TYPE=latest; fi
-        export IMAGE=cccs/assemblyline-service-sigma/assemblyline-service-sigma
+        export IMAGE=cccs/assemblyline-service-sigma
         docker build --build-arg version=$TAG -t $IMAGE:$TAG -t $IMAGE:$BUILD_TYPE -f ./Dockerfile .
         docker push $IMAGE
       displayName: Build and deploy containers to dockerhub
