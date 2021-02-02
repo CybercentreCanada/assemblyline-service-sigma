@@ -65,7 +65,7 @@ update_config:
   run_options:
     allow_internet_access: true
     command: ["python", "-m", "sigma_updater"]
-    image: ${REGISTRY}cybercentrecanada/assemblyline-service-sigma/assemblyline-service-sigma:$SERVICE_TAG
+    image: ${REGISTRY}cccs/assemblyline-service-sigma:$SERVICE_TAG
   sources:
     - name: sigma
       pattern: .*windows\/sysmon.*\.yml
