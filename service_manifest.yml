@@ -65,7 +65,7 @@ update_config:
   run_options:
     allow_internet_access: true
     command: ["python", "-m", "sigma_updater"]
-    image: ${PRIVATE_REGISTRY}cybercentrecanada/assemblyline-service-sigma:$SERVICE_TAG
+    image: ${PRIVATE_REGISTRY}cybercentrecanada/assemblyline-service-sigma/assemblyline-service-sigma:$SERVICE_TAG
   sources:
     - name: sigma
       pattern: .*windows\/sysmon.*\.yml
@@ -77,7 +77,7 @@ update_config:
 #  - cpu and ram allocation by the container
 docker_config:
   allow_internet_access: true
-  image: ${PRIVATE_REGISTRY}cybercentrecanada/assemblyline-service-sigma:$SERVICE_TAG
+  image: ${PRIVATE_REGISTRY}cybercentrecanada/assemblyline-service-sigma/assemblyline-service-sigma:$SERVICE_TAG
   cpu_cores: 1.0
   ram_mb: 1024
 

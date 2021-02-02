@@ -3,13 +3,12 @@ import os
 from typing import Dict, Any
 import yaml
 
-
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
 from sigma_signature import pysigma
 
-UPDATE_OUTPUT_PATH = os.environ.get('UPDATE_OUTPUT_PATH', "/tmp/sigma_updater_output")
+UPDATE_OUTPUT_PATH = os.environ.get('UPDATE_OUTPUT_PATH', "/mount/input_directory")
 
 
 def get_filenames():
@@ -21,6 +20,7 @@ def get_filenames():
             for filename in data.keys():
                 filenames.append(filename)
     return filenames
+
 
 class EventDataSection(ResultSection):
     def __init__(self, event_data):
@@ -66,10 +66,11 @@ class Sigma(ServiceBase):
 
     def __init__(self, config=None):
         super(Sigma, self).__init__(config)
-        filenames = get_filenames()
-        for fn in filenames:
-            with open(fn) as f:
-                self.sigma_parser.add_signature(f)
+        # only needed for dev
+        # filenames = get_filenames()
+        # for fn in filenames:
+        #     with open(fn) as f:
+        #         self.sigma_parser.add_signature(f)
 
     def sigma_hit(self, alert, event):
         self.hits.append((alert, event))
@@ -96,5 +97,6 @@ class Sigma(ServiceBase):
                 result.add_section(hit_section)
             request.result = result
         else:
-            self.log.info(f"{file_name} is not an EVTX file")
+            self.log.info(f" {file_name} is not an EVTX file")
+            request.result = result
 
