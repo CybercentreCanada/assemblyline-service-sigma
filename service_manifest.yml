@@ -23,7 +23,7 @@ category: Static Analysis
 # If set to false, the service will only have access to the file metadata (e.g. Hashes, size, type, ...)
 file_required: true
 # Maximum execution time the service has before it's considered to be timed out
-timeout: 10
+timeout: 200
 # Does the service force the caching of results to be disabled
 # (only use for service that will always provided different results each run)
 disable_cache: false
@@ -65,18 +65,19 @@ update_config:
   run_options:
     allow_internet_access: true
     command: ["python", "-m", "sigma_updater"]
-    image: ${REGISTRY}cccs/assemblyline-service-suricata:$SERVICE_TAG
+    image: ${REGISTRY}cybercentrecanada/assemblyline-service-sigma/assemblyline-service-sigma:$SERVICE_TAG
   sources:
     - name: sigma
-      pattern: .*\.yml
-      uri: https://github.com/Neo23x0/sigma
+      pattern: .*windows\/sysmon.*\.yml
+      uri: https://github.com/Neo23x0/sigma.git
   update_interval_seconds: 21600 # Quarter-day (every 6 hours)
 
 # Docker configuration block which defines:
 #  - the name of the docker container that will be created
 #  - cpu and ram allocation by the container
 docker_config:
-  image: cccs/assemblyline-service-sigma:$SERVICE_TAG
+  allow_internet_access: true
+  image: ${REGISTRY}cybercentrecanada/assemblyline-service-sigma/assemblyline-service-sigma:$SERVICE_TAG
   cpu_cores: 1.0
   ram_mb: 1024
 
