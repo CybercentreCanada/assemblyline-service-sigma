@@ -8,17 +8,22 @@ from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
 from sigma_signature import pysigma
 
-UPDATE_OUTPUT_PATH = os.environ.get('UPDATE_OUTPUT_PATH', "/mount/input_directory")
+FILE_UPDATE_DIRECTORY = os.environ.get('FILE_UPDATE_DIRECTORY', "/tmp/sigma_updates")
 
 
-def get_filenames():
+def get_rules(self):
     filenames = []
-    with open(os.path.join(UPDATE_OUTPUT_PATH, 'response.yaml')) as yaml_fh:
+    if not os.path.exists(FILE_UPDATE_DIRECTORY):
+        self.log.warning("Sigma rules directory not found")
+        return None
+    with open(os.path.join(FILE_UPDATE_DIRECTORY, 'response.yaml')) as yaml_fh:
         yaml_data = yaml.safe_load(yaml_fh)
         json_data = json.loads(yaml_data['hash'])
         for source, data in json_data.items():
             for filename in data.keys():
                 filenames.append(filename)
+                self.log.info(f"Loaded {filename}")
+    self.log.info(f"Loaded {len(filenames)} rules")
     return filenames
 
 
@@ -66,11 +71,10 @@ class Sigma(ServiceBase):
 
     def __init__(self, config=None):
         super(Sigma, self).__init__(config)
-        # only needed for dev
-        # filenames = get_filenames()
-        # for fn in filenames:
-        #     with open(fn) as f:
-        #         self.sigma_parser.add_signature(f)
+        filenames = get_rules(self)
+        for fn in filenames:
+            with open(fn) as f:
+                self.sigma_parser.add_signature(f)
 
     def sigma_hit(self, alert, event):
         self.hits.append((alert, event))
