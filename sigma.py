@@ -16,6 +16,11 @@ def get_rules(self):
     if not os.path.exists(FILE_UPDATE_DIRECTORY):
         self.log.warning("Sigma rules directory not found")
         return None
+    dirs = os.listdir(FILE_UPDATE_DIRECTORY)
+    self.log.info(dirs)
+    for path, subdirs, files in os.walk(FILE_UPDATE_DIRECTORY):
+        for name in files:
+            self.log.info(os.path.join(path, name))
     with open(os.path.join(FILE_UPDATE_DIRECTORY, 'response.yaml')) as yaml_fh:
         yaml_data = yaml.safe_load(yaml_fh)
         json_data = json.loads(yaml_data['hash'])
