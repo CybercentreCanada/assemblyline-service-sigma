@@ -25,6 +25,8 @@ def get_rules(self):
                        if os.path.isdir(os.path.join(FILE_UPDATE_DIRECTORY,d)) and not
                        d.startswith(".tmp")], key = os.path.getctime)
     self.log.info(f"max dir is {rules_directory}")
+    self.log.info(os.listdir(rules_directory))
+
     with open(os.path.join(rules_directory, 'response.yaml')) as yaml_fh:
         yaml_data = yaml.safe_load(yaml_fh)
         json_data = json.loads(yaml_data['hash'])
