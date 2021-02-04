@@ -20,7 +20,11 @@ def get_rules(self):
     self.log.info(dirs)
     for path, subdirs, files in os.walk(FILE_UPDATE_DIRECTORY):
         for name in files:
-            self.log.info(os.path.join(path, name))
+            self.log.info(f"rule {os.path.join(path, name)}")
+    rules_directory = max([os.path.join(FILE_UPDATE_DIRECTORY, d) for d in os.listdir(FILE_UPDATE_DIRECTORY)
+                       if os.path.isdir(os.path.join(FILE_UPDATE_DIRECTORY,d)) and not
+                       d.startswith(".tmp")], key = os.path.getctime)
+    self.log.info(f"max dir is {rules_directory}")
     with open(os.path.join(FILE_UPDATE_DIRECTORY, 'response.yaml')) as yaml_fh:
         yaml_data = yaml.safe_load(yaml_fh)
         json_data = json.loads(yaml_data['hash'])
