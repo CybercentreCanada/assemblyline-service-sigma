@@ -137,7 +137,7 @@ class LogicTransformer(Transformer):
 
 
 # Create & initialize Lark class instance
-parser = Lark(grammar, parser='lalr', transformer=LogicTransformer())
+parser = Lark(grammar, parser='lalr', transformer=LogicTransformer(), cache=True)
 
 
 def check_event(e, rules):
@@ -159,7 +159,7 @@ def check_event(e, rules):
             else:
                 callback_buildReport(alerts,
                                      Alert(rule_name, get_description(rule_obj), event, get_level(rule_obj),
-                                           get_yaml_name(rule_obj)))
+                                           rule_name))
     return alerts
 
 

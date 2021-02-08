@@ -1,7 +1,7 @@
 import os
 import yaml
 
-SERVICE_MANIFEST = "./service_manifest.yml"
+SERVICE_MANIFEST = "../service_manifest.yml"
 UPDATE_CONFIG = "/tmp/sigma_updater_config.yaml"
 
 USER = os.environ.get("API_USER", "admin")

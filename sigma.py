@@ -8,37 +8,34 @@ from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
 from sigma_signature import pysigma
 
-FILE_UPDATE_DIRECTORY = os.environ.get('FILE_UPDATE_DIRECTORY', "/tmp/sigma_updates")
+FILE_UPDATE_DIRECTORY = os.environ.get('FILE_UPDATE_DIRECTORY', "/tmp/sigma_updater_output/sigma")
 
 
 def get_rules(self):
-    filenames = []
     if not os.path.exists(FILE_UPDATE_DIRECTORY):
-        self.log.warning("Sigma rules directory not found")
+        self.log.error("Sigma rules directory not found")
         return None
-    dirs = os.listdir(FILE_UPDATE_DIRECTORY)
-    self.log.info(dirs)
-    for path, subdirs, files in os.walk(FILE_UPDATE_DIRECTORY):
-        for name in files:
-            self.log.info(f"rule {os.path.join(path, name)} ")
-    rules_directory = max([os.path.join(FILE_UPDATE_DIRECTORY, d) for d in os.listdir(FILE_UPDATE_DIRECTORY)
-                       if os.path.isdir(os.path.join(FILE_UPDATE_DIRECTORY,d)) and not
-                       d.startswith(".tmp")], key = os.path.getctime)
-    for path, subdirs, files in os.walk(rules_directory):
-        for name in files:
-            full_path = os.path.join(path, name)
-            self.log.info(f"full path {full_path}")
-    self.log.info(os.listdir(full_path))
+    if FILE_UPDATE_DIRECTORY.startswith('/mount'):
+        # Running in Container
+        rules_directory = max([os.path.join(FILE_UPDATE_DIRECTORY, d) for d in os.listdir(FILE_UPDATE_DIRECTORY)
+                           if os.path.isdir(os.path.join(FILE_UPDATE_DIRECTORY,d)) and not
+                           d.startswith(".tmp")], key = os.path.getctime)
+        for path, subdirs, files in os.walk(rules_directory):
+            self.log.info(subdirs, files)
+            if len(subdirs)==1:
+               for name in subdirs:
+                   FILE_UPDATE_DIRECTORY = os.path.join(path, name)
+                   self.log.info(f"full path {FILE_UPDATE_DIRECTORY}")
+            else:
+                self.log.warning("Wrong directory structure")
 
-    with open(os.path.join(rules_directory, 'response.yaml')) as yaml_fh:
-        yaml_data = yaml.safe_load(yaml_fh)
-        json_data = json.loads(yaml_data['hash'])
-        for source, data in json_data.items():
-            for filename in data.keys():
-                filenames.append(filename)
-                self.log.info(f"Loaded {filename}")
-    self.log.info(f"Loaded {len(filenames)} rules")
-    return filenames
+    self.log.info(os.listdir(FILE_UPDATE_DIRECTORY))
+    with open(os.path.join(FILE_UPDATE_DIRECTORY, 'sigma')) as yaml_fh:
+        file = yaml_fh.read()
+        splitted_rules = file.split('\n\n\n')
+    self.log.info(splitted_rules)
+    self.log.info(f"Loaded {len(splitted_rules)} rules")
+    return splitted_rules
 
 
 class EventDataSection(ResultSection):
@@ -56,7 +53,7 @@ class SigmaHitSection(ResultSection):
     def __init__(self, alert, event):
         title = "Sigma match " + alert['yaml_name']
         json_body = dict(
-            yaml_name=alert['yaml_name'],
+            rule_name=alert['yaml_name'],
             yaml_score=alert['score']
         )
         super(SigmaHitSection, self).__init__(
@@ -85,10 +82,9 @@ class Sigma(ServiceBase):
 
     def __init__(self, config=None):
         super(Sigma, self).__init__(config)
-        filenames = get_rules(self)
-        for fn in filenames:
-            with open(fn) as f:
-                self.sigma_parser.add_signature(f)
+        rules = get_rules(self)
+        for rule in rules:
+            self.sigma_parser.add_signature(rule)
 
     def sigma_hit(self, alert, event):
         self.hits.append((alert, event))
@@ -100,6 +96,7 @@ class Sigma(ServiceBase):
         path = request.file_path
         file_name = request.file_name
         self.log.info(f" executing {file_name}")
+        self.log.info(f"Loaded {self.sigma_parser.rules}")
         if file_name.endswith('evtx'):
             self.sigma_parser.register_callback(self.sigma_hit)
             # TODO cProfile.runctx('self.sigma_parser.check_logfile(path)', globals(), locals(),)
