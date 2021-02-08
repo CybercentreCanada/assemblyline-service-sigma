@@ -12,25 +12,28 @@ FILE_UPDATE_DIRECTORY = os.environ.get('FILE_UPDATE_DIRECTORY', "/tmp/sigma_upda
 
 
 def get_rules(self):
-    if not os.path.exists(FILE_UPDATE_DIRECTORY):
+    SIGMA_RULES_PATH = FILE_UPDATE_DIRECTORY
+
+    if not os.path.exists(SIGMA_RULES_PATH):
         self.log.error("Sigma rules directory not found")
         return None
-    if FILE_UPDATE_DIRECTORY.startswith('/mount'):
+    if SIGMA_RULES_PATH.startswith('/mount'):
         # Running in Container
-        rules_directory = max([os.path.join(FILE_UPDATE_DIRECTORY, d) for d in os.listdir(FILE_UPDATE_DIRECTORY)
-                           if os.path.isdir(os.path.join(FILE_UPDATE_DIRECTORY,d)) and not
+        rules_directory = max([os.path.join(SIGMA_RULES_PATH, d) for d in os.listdir(SIGMA_RULES_PATH)
+                           if os.path.isdir(os.path.join(SIGMA_RULES_PATH,d)) and not
                            d.startswith(".tmp")], key = os.path.getctime)
         for path, subdirs, files in os.walk(rules_directory):
             self.log.info(subdirs, files)
             if len(subdirs)==1:
                for name in subdirs:
-                   FILE_UPDATE_DIRECTORY = os.path.join(path, name)
-                   self.log.info(f"full path {FILE_UPDATE_DIRECTORY}")
+                   SIGMA_RULES_PATH = os.path.join(path, name)
+                   self.log.info(f"full path {SIGMA_RULES_PATH}")
             else:
                 self.log.warning("Wrong directory structure")
+                return None
 
-    self.log.info(os.listdir(FILE_UPDATE_DIRECTORY))
-    with open(os.path.join(FILE_UPDATE_DIRECTORY, 'sigma')) as yaml_fh:
+    self.log.info(os.listdir(SIGMA_RULES_PATH))
+    with open(os.path.join(SIGMA_RULES_PATH, 'sigma')) as yaml_fh:
         file = yaml_fh.read()
         splitted_rules = file.split('\n\n\n')
     self.log.info(splitted_rules)
