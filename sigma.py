@@ -1,7 +1,7 @@
 import json
 import os
 from typing import Dict, Any
-import yaml
+from pathlib import Path
 
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
@@ -19,11 +19,21 @@ def get_rules(self):
         return None
     if SIGMA_RULES_PATH.startswith('/mount'):
         # Running in Container
-        rules_directory = max([os.path.join(SIGMA_RULES_PATH, d) for d in os.listdir(SIGMA_RULES_PATH)
-                           if os.path.isdir(os.path.join(SIGMA_RULES_PATH,d)) and not
-                           d.startswith(".tmp")], key = os.path.getctime)
+        try:
+            rules_directory = max([os.path.join(SIGMA_RULES_PATH, d) for d in os.listdir(SIGMA_RULES_PATH)
+                               if os.path.isdir(os.path.join(SIGMA_RULES_PATH,d)) and not
+                               d.startswith(".tmp")], key = os.path.getctime)
+
+        except ValueError:
+            self.log.warning("Sigma rules directory not found")
+            return None
+
+        rules_list = [str(f) for f in Path(rules_directory).rglob("*") if os.path.isfile(str(f))]
+        self.log.info(f"rules list {rules_list}")
+
+
         for path, subdirs, files in os.walk(rules_directory):
-            self.log.info(subdirs, files)
+            self.log.info(f"path {path} subdirs {subdirs}, files {files}")
             if len(subdirs)==1:
                for name in subdirs:
                    SIGMA_RULES_PATH = os.path.join(path, name)
