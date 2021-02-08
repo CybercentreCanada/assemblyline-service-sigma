@@ -33,8 +33,7 @@ def get_rules(self):
             self.log.warning("Only one file should be in update directory")
             return None
         self.log.info(f"rules list {rules_list}")
-        SIGMA_RULES_PATH = rules_directory
-
+        SIGMA_RULES_PATH = os.path.join(rules_directory,'sigma')
 
     self.log.info((SIGMA_RULES_PATH))
     with open(os.path.join(SIGMA_RULES_PATH, 'sigma')) as yaml_fh:
