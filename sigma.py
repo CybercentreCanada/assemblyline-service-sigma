@@ -27,22 +27,16 @@ def get_rules(self):
         except ValueError:
             self.log.warning("Sigma rules directory not found")
             return None
-
+        self.log.info(f"rules dir {rules_directory}")
         rules_list = [str(f) for f in Path(rules_directory).rglob("*") if os.path.isfile(str(f))]
+        if len(rules_list) > 1:
+            self.log.warning("Only one file should be in update directory")
+            return None
         self.log.info(f"rules list {rules_list}")
+        SIGMA_RULES_PATH = rules_directory
 
 
-        for path, subdirs, files in os.walk(rules_directory):
-            self.log.info(f"path {path} subdirs {subdirs}, files {files}")
-            if len(subdirs)==1:
-               for name in subdirs:
-                   SIGMA_RULES_PATH = os.path.join(path, name)
-                   self.log.info(f"full path {SIGMA_RULES_PATH}")
-            else:
-                self.log.warning("Wrong directory structure")
-                return None
-
-    self.log.info(os.listdir(SIGMA_RULES_PATH))
+    self.log.info((SIGMA_RULES_PATH))
     with open(os.path.join(SIGMA_RULES_PATH, 'sigma')) as yaml_fh:
         file = yaml_fh.read()
         splitted_rules = file.split('\n\n\n')
