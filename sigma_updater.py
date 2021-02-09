@@ -276,9 +276,10 @@ def sigma_update() -> None:
                 os.makedirs(UPDATE_OUTPUT_PATH)
 
             temp_zip_file = os.path.join(UPDATE_OUTPUT_PATH, 'temp.zip')
+
             al_client.signature.download(output=temp_zip_file,
                                          query="type:sigma AND (status:NOISY OR status:DEPLOYED)")
-
+            LOGGER.info(f"sigs downloaded in  {os.listdir(UPDATE_OUTPUT_PATH)}")
             if os.path.exists(temp_zip_file):
                 with ZipFile(temp_zip_file, 'r') as zip_f:
                     zip_f.extractall(UPDATE_OUTPUT_PATH)

@@ -4,15 +4,14 @@ ENV SERVICE_PATH sigma.Sigma
 
 USER root
 
-RUN echo 'deb http://deb.debian.org/debian stretch-backports main' >> /etc/apt/sources.list
 
 # Install APT dependancies
-RUN apt-get update && apt-get install -y git libssl1.1 libmagic1 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git libssl1.1  && rm -rf /var/lib/apt/lists/*
 
 FROM base AS build
 
 # Install APT dependancies
-RUN apt-get update && apt-get install -y git libssl-dev libmagic-dev automake libtool pkg-config make gcc wget  && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git libssl-dev  && rm -rf /var/lib/apt/lists/*
 
 # Install PIP dependancies
 USER assemblyline

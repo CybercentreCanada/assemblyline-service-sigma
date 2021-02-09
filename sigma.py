@@ -23,23 +23,20 @@ def get_rules(self):
             rules_directory = max([os.path.join(SIGMA_RULES_PATH, d) for d in os.listdir(SIGMA_RULES_PATH)
                                if os.path.isdir(os.path.join(SIGMA_RULES_PATH,d)) and not
                                d.startswith(".tmp")], key = os.path.getctime)
-
         except ValueError:
-            self.log.warning("Sigma rules directory not found")
+            self.log.error("Sigma rules directory not found")
             return None
-        self.log.info(f"rules dir {rules_directory}")
-        rules_list = [str(f) for f in Path(rules_directory).rglob("*") if os.path.isfile(str(f))]
-        if len(rules_list) > 1:
-            self.log.warning("Only one file should be in update directory")
-            return None
-        self.log.info(f"rules list {rules_list}")
+        # rules_list = [str(f) for f in Path(rules_directory).rglob("*") if os.path.isfile(str(f))]
+        # if len(rules_list) > 1:
+        #     self.log.warning("Only one file should be in update directory")
+        #     return None
+        # self.log.info(f"rules list {rules_list}")
         SIGMA_RULES_PATH = os.path.join(rules_directory,'sigma')
 
-    self.log.info((SIGMA_RULES_PATH))
+    self.log.info(SIGMA_RULES_PATH)
     with open(os.path.join(SIGMA_RULES_PATH, 'sigma')) as yaml_fh:
         file = yaml_fh.read()
         splitted_rules = file.split('\n\n\n')
-    self.log.info(splitted_rules)
     self.log.info(f"Loaded {len(splitted_rules)} rules")
     return splitted_rules
 
