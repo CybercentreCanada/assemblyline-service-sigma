@@ -45,17 +45,17 @@ heuristics:
     description: Sigma hit
   - heur_id: 2
     name: Sigma High alert
-    score: 1000
+    score: 500
     filetype: '*'
     description: Sigma hit
   - heur_id: 3
     name: Sigma Medium alert
-    score: 500
+    score: 100
     filetype: '*'
     description: Sigma hit
   - heur_id: 4
     name: Sigma Low alert
-    score: 250
+    score: 10
     filetype: '*'
     description: Sigma hit
 
