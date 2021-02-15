@@ -44,20 +44,31 @@ def get_rules(self):
 class EventDataSection(ResultSection):
     def __init__(self, event_data):
         title = "Event Data"
+        body = {}
         json_body = event_data['Event']['EventData']
+        keep_fields = ['Device', 'Image','UtcTime','ProcessGuid','ProcessId','Description',
+                       'State','Version','Configuration','ConfigurationFileHash','CallTrace',
+                       'SourceProcessGUID','SourceProcessId','SourceThreadId','SourceImage',
+                       'TargetProcessGUID','TargetProcessId','TargetImage','GrantedAccess',
+                       'CommandLine','IntegrityLevel','ParentCommandLine','ParentImage',
+                       'ParentProcessGuid','ParentProcessId','ProcessGuid',]
+        for k, v in json_body.items():
+            if k in keep_fields and v is not None:
+                body[k] = v
         super(EventDataSection, self).__init__(
             title_text=title,
             body_format=BODY_FORMAT.KEY_VALUE,
-            body=json.dumps(json_body)
+            body=json.dumps(body)
         )
 
 
 class SigmaHitSection(ResultSection):
-    def __init__(self, alert, event):
-        title = "Sigma match " + alert['yaml_name']
+    def __init__(self, title, events):
+        title = "Sigma match " + title
+        sc = events[0]
+        score = sc['score']
         json_body = dict(
-            rule_name=alert['yaml_name'],
-            yaml_score=alert['score']
+            yaml_score=score
         )
         super(SigmaHitSection, self).__init__(
             title_text=title,
@@ -80,22 +91,26 @@ def get_heur_id(level):
 
 
 class Sigma(ServiceBase):
-    sigma_parser = pysigma.PySigma()
-    hits = []
-
     def __init__(self, config=None):
         super(Sigma, self).__init__(config)
+        self.sigma_parser = pysigma.PySigma()
+        self.hits = {}
         rules = get_rules(self)
         for rule in rules:
             self.sigma_parser.add_signature(rule)
 
     def sigma_hit(self, alert, event):
-        self.hits.append((alert, event))
+        title = alert['title']
+        if title not in self.hits:
+            event['score'] = alert['score']
+            self.hits[title] = [event]
+        else:
+            self.hits[title].append(event)
 
 
     def execute(self, request: ServiceRequest) -> Dict[str, Any]:
         result = Result()
-        self.hits = []  # clear the hits list
+        self.hits = {}  # clear the hits dict
         path = request.file_path
         file_name = request.file_name
         self.log.info(f" executing {file_name}")
@@ -107,11 +122,27 @@ class Sigma(ServiceBase):
             self.log.info("in evtx")
             if len(self.hits) > 0:
                 hit_section = ResultSection('Events detected as suspicious')
-                for alert, event in self.hits:
-                    section = SigmaHitSection(alert, event)
-                    section.set_heuristic(get_heur_id(alert['score']))
-                    #add the event data as a subsection
-                    section.add_subsection(EventDataSection((event)))
+                #group alerts together
+                for title, events in self.hits.items():
+                    section = SigmaHitSection(title, events)
+                    tags = self.sigma_parser.rules[title]['tags']
+
+                    for tag in tags:
+                        name = tag[7:]
+                        if name.startswith(('t','g','s')):
+                            attack_id = name.upper()
+                        #section.add_tag("attribution.campaign", name)
+                        #section.add_tag("attribution.technique", name)
+                    if attack_id:
+                        section.set_heuristic(get_heur_id(events[0]['score']), attack_id=attack_id, signature = title)
+                    else:
+                        section.set_heuristic(get_heur_id(events[0]['score']), signature=title)
+
+                    self.log.info(tags)
+
+                    for event in events:
+                        #add the event data as a subsection
+                        section.add_subsection(EventDataSection((event)))
                     hit_section.add_subsection(section)
                 result.add_section(hit_section)
             request.result = result
