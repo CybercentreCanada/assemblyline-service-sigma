@@ -1,6 +1,7 @@
 import json
 import os
 from typing import Dict, Any
+import cProfile
 from pathlib import Path
 
 from assemblyline_v4_service.common.base import ServiceBase
@@ -44,7 +45,8 @@ def get_rules(self):
 class EventDataSection(ResultSection):
     def __init__(self, event_data):
         title = "Event Data"
-        body = {}
+        system_fields = event_data['Event']['System']
+
         json_body = event_data['Event']['EventData']
         keep_fields = ['Device', 'Image','UtcTime','ProcessGuid','ProcessId','Description',
                        'State','Version','Configuration','ConfigurationFileHash','CallTrace',
@@ -52,9 +54,11 @@ class EventDataSection(ResultSection):
                        'TargetProcessGUID','TargetProcessId','TargetImage','GrantedAccess',
                        'CommandLine','IntegrityLevel','ParentCommandLine','ParentImage',
                        'ParentProcessGuid','ParentProcessId','ProcessGuid',]
-        for k, v in json_body.items():
-            if k in keep_fields and v is not None:
-                body[k] = v
+
+        for k,v in system_fields.items():
+            if k in ('Channel', 'EventID'):
+                json_body[k] = v
+        body = {k:v for k,v in json_body.items() if v}
         super(EventDataSection, self).__init__(
             title_text=title,
             body_format=BODY_FORMAT.KEY_VALUE,
@@ -113,11 +117,14 @@ class Sigma(ServiceBase):
         self.hits = {}  # clear the hits dict
         path = request.file_path
         file_name = request.file_name
+        source = self.service_attributes.update_config.sources
+        sources = [s['name'] for s in source]
         self.log.info(f" executing {file_name}")
         self.log.info(f"Loaded {self.sigma_parser.rules}")
+        self.log.info(f"number of rules {len(self.sigma_parser.rules)}")
         if file_name.endswith('evtx'):
             self.sigma_parser.register_callback(self.sigma_hit)
-            # TODO cProfile.runctx('self.sigma_parser.check_logfile(path)', globals(), locals(),)
+            #cProfile.runctx('self.sigma_parser.check_logfile(path)', globals(), locals(),)
             self.sigma_parser.check_logfile(path)
             self.log.info("in evtx")
             if len(self.hits) > 0:
@@ -134,12 +141,10 @@ class Sigma(ServiceBase):
                         #section.add_tag("attribution.campaign", name)
                         #section.add_tag("attribution.technique", name)
                     if attack_id:
-                        section.set_heuristic(get_heur_id(events[0]['score']), attack_id=attack_id, signature = title)
+                        section.set_heuristic(get_heur_id(events[0]['score']), attack_id=attack_id, signature =f"{sources[0]}.{title}")
                     else:
-                        section.set_heuristic(get_heur_id(events[0]['score']), signature=title)
-
+                        section.set_heuristic(get_heur_id(events[0]['score']), signature=f"{sources[0]}.{title}")
                     self.log.info(tags)
-
                     for event in events:
                         #add the event data as a subsection
                         section.add_subsection(EventDataSection((event)))

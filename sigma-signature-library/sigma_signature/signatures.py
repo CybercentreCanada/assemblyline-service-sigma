@@ -34,11 +34,35 @@ def loadSignature(signature_file):
     yaml_data = yaml.safe_load_all(signature_file)
     for item in yaml_data:
         if isinstance(item, dict):
-            subset_dict = {k: item[k] for k in ('detection', 'description', 'status', 'level', 'tags')}
-            return (item['title'], subset_dict)
+            #item = category_mapping(item)
+            subset_dict = {k: item.get(k) for k in ('detection', 'description',  'level', 'tags', 'logsource')}
+            mandatory_fields = ['detection', 'logsource']
+            for field in mandatory_fields:
+                if field not in subset_dict:
+                    raise KeyError(f"WARNING: Mandatory field {field} not found in YAML")
+            return subset_dict
 
+CATEGORY_EVENTID = {
+    "process_creation":1,
 
-
+}
+def category_mapping(yaml_data):
+    if 'category' in yaml_data['logsource']:
+        # then mapping to eventid is needed
+        cat = yaml_data['logsource']['category']
+        sysmon_event = CATEGORY_EVENTID.get(cat)
+    elif 'service' in yaml_data['logsource']:
+        print(f"service {yaml_data['logsource']}")
+        print('title: ',yaml_data['title'])
+        cat = yaml_data['logsource']['service']
+        sysmon_event = CATEGORY_EVENTID.get(cat)
+    else:
+        print(f'not found category {yaml_data["title"]} {yaml_data["logsource"]}')
+        return yaml_data
+    yaml_data['detection']['category_selection'] = {"EventID":sysmon_event}
+    yaml_data['detection']['condition'] = ' category_selection and ' + yaml_data['detection']['condition']
+    modified_yaml = yaml_data
+    return modified_yaml
 def escape_compatible(detect):
     """
     Looks through a yaml signature detection section and replaces all escape characters with just the characters to be

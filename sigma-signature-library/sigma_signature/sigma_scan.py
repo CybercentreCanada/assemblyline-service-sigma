@@ -16,7 +16,8 @@ def check_pair(event, key, value):
     :param value: str, given key value
     :return: bool, whether or not the match exists in the event
     """
-
+    #print('event  ',event)
+    #print('kv', key, value)
     if '|' in key:
         modifiers = key.split('|')
         for word in modifiers:
@@ -59,6 +60,9 @@ def check_pair(event, key, value):
             return flag
 
         elif '*' in str(value):
+            if isinstance(value, list):
+                flags = [ fnmatch.fnmatch(event[key], pattern) for pattern in value ]
+                return True if True in flags else False
             return fnmatch.fnmatch(event[key], value)
 
         elif str(value) == '' or str(value) == 'null':

@@ -95,6 +95,7 @@ class LogicTransformer(Transformer):
                 left = left and right
             return left
         elif args[0] == 'and_rule':
+            #print('and args', args)
             left = self.not_rule(args[1])
             for right in args[1:]:
                 left = left and self.not_rule(right)
@@ -135,11 +136,32 @@ class LogicTransformer(Transformer):
             return analyze_x_of(event, str(rule), rules[rule])
         return None
 
+EVENT_MAPPING = {
+    "process_creation":1,
 
+}
 # Create & initialize Lark class instance
 parser = Lark(grammar, parser='lalr', transformer=LogicTransformer())
 
+def check_eventid(ev, rule):
 
+    id = ev['EventID']
+    try:
+        category = rule['logsource']['category']
+    except KeyError as e:
+        #print(e)
+        #print(rule)
+        return False
+
+    category_to_id = EVENT_MAPPING.get(category)
+    if isinstance(id, list):
+        for i in id:
+            if category_to_id == i:
+                return True
+    if isinstance(id, str):
+        if category_to_id == id:
+            return True
+    return False
 def check_event(e, rules):
     global event
     event = prepareEventLog(e)
@@ -151,6 +173,14 @@ def check_event(e, rules):
 
         rule = rule_name
         condition = get_condition(rule_obj, rule_name)
+        # print('rule is ', rule)
+        # print('condition is', condition)
+        # print('rule obj', rule_obj)
+
+        match = check_eventid(event, rule_obj)
+        if match:
+            # skip parsing because event doesn't match
+            continue
         result = parser.parse(condition).pretty()
 
         if 'True' in result:
