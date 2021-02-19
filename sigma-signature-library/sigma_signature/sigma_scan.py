@@ -161,19 +161,7 @@ def find_all_matches(event, rule_dict):
                             matches.append(True)
     return matches
 
-
-def analyze(event, rule_name, rule_dict):
-    """
-    Analyzes the truth value of each condition specified within the condition string of the rule.
-
-    :param event: dict, event read from the Sysmon log
-    :param rule_name: str, name of the rule
-    :param rule_dict: dict, dictionary containing the rule info from Sigma .yml files.
-    :return: dict, dictionary of truth values
-    """
-
-    condition = get_condition(rule_dict, rule_name)
-
+def analyze_condition(event, rule_dict, condition, rule_name):
     indicators = re.split('[(]|[)]| of |not| and | or |[|]', condition)
     for word in indicators:
         if word == '':
@@ -190,6 +178,28 @@ def analyze(event, rule_name, rule_dict):
                 matches[word] = False
 
     return matches
+
+def analyze(event, rule_name, rule_dict):
+    """
+    Analyzes the truth value of each condition specified within the condition string of the rule.
+
+    :param event: dict, event read from the Sysmon log
+    :param rule_name: str, name of the rule
+    :param rule_dict: dict, dictionary containing the rule info from Sigma .yml files.
+    :return: dict, dictionary of truth values
+    """
+
+    condition = get_condition(rule_dict, rule_name)
+    if isinstance(condition, list):
+        list_matches = [analyze_condition(event, rule_dict, c, rule_name) for c in condition]
+        return list_matches
+
+    if isinstance(condition, str):
+        matches = analyze_condition(event, rule_dict, condition, rule_name)
+        return matches
+
+
+
 
 
 def analyze_x_of(event, rule_name, rule_dict):

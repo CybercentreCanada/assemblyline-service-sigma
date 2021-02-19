@@ -56,8 +56,13 @@ class LogicTransformer(Transformer):
     def identifier_rule(self, args):
         # Call analyze on all rules in the rule directory to find matches for each event
         hits = analyze(event, str(rule), rules[rule])
+        if isinstance(hits, list):
+            for pair in hits:
+                if args in pair:
+                    return pair[args]
         if args in hits:
             return hits[args]
+
 
     def atom_rule(self, args):
         if isinstance(args, list):
@@ -95,7 +100,6 @@ class LogicTransformer(Transformer):
                 left = left and right
             return left
         elif args[0] == 'and_rule':
-            #print('and args', args)
             left = self.not_rule(args[1])
             for right in args[1:]:
                 left = left and self.not_rule(right)
@@ -149,8 +153,6 @@ def check_eventid(ev, rule):
     try:
         category = rule['logsource']['category']
     except KeyError as e:
-        #print(e)
-        #print(rule)
         return False
 
     category_to_id = EVENT_MAPPING.get(category)
@@ -173,9 +175,6 @@ def check_event(e, rules):
 
         rule = rule_name
         condition = get_condition(rule_obj, rule_name)
-        # print('rule is ', rule)
-        # print('condition is', condition)
-        # print('rule obj', rule_obj)
 
         match = check_eventid(event, rule_obj)
         if not match:
