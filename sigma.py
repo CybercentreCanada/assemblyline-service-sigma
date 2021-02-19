@@ -120,7 +120,7 @@ class Sigma(ServiceBase):
         source = self.service_attributes.update_config.sources
         sources = [s['name'] for s in source]
         self.log.info(f" executing {file_name}")
-        self.log.info(f"Loaded {self.sigma_parser.rules}")
+        #self.log.info(f"Loaded {self.sigma_parser.rules}")
         self.log.info(f"number of rules {len(self.sigma_parser.rules)}")
         if file_name.endswith('evtx'):
             self.sigma_parser.register_callback(self.sigma_hit)

@@ -16,8 +16,7 @@ def check_pair(event, key, value):
     :param value: str, given key value
     :return: bool, whether or not the match exists in the event
     """
-    #print('event  ',event)
-    #print('kv', key, value)
+
     if '|' in key:
         modifiers = key.split('|')
         for word in modifiers:
@@ -25,7 +24,6 @@ def check_pair(event, key, value):
                 modifiers.remove(word)
         key = modifiers[0]
         modifiers = modifiers[1:]
-        #modifiers.remove(modifiers[0])
 
     else:
         modifiers = []
@@ -166,7 +164,6 @@ def analyze_condition(event, rule_dict, condition, rule_name):
     for word in indicators:
         if word == '':
             indicators.remove(word)
-
     matches = {}
 
     for word in indicators:
@@ -176,7 +173,6 @@ def analyze_condition(event, rule_dict, condition, rule_name):
                 matches[word] = True
             else:
                 matches[word] = False
-
     return matches
 
 def analyze(event, rule_name, rule_dict):
