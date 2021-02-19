@@ -38,9 +38,9 @@ def loadSignature(signature_file):
             subset_dict = {k: item.get(k) for k in ('detection', 'description',  'level', 'tags', 'logsource')}
             mandatory_fields = ['detection', 'logsource']
             for field in mandatory_fields:
-                if field not in subset_dict:
-                    raise KeyError(f"WARNING: Mandatory field {field} not found in YAML")
-            return subset_dict
+                if not subset_dict[field]:
+                    raise KeyError(f"WARNING:{field} not found in YAML")
+            return (item['title'], subset_dict)
 
 CATEGORY_EVENTID = {
     "process_creation":1,
@@ -184,6 +184,9 @@ def get_condition(rule_dict, condition):
     except KeyError:
         print("Error: No Condition Found: " + str(condition))
         return "none"
+    except AttributeError:
+        # If condition is a list
+        return ([ condition.lower() for condition in rule_dict['detection']['condition']])
 
 
 def get_data(rule_dict, key):

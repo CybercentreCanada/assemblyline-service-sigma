@@ -23,7 +23,7 @@ category: Static Analysis
 # If set to false, the service will only have access to the file metadata (e.g. Hashes, size, type, ...)
 file_required: true
 # Maximum execution time the service has before it's considered to be timed out
-timeout: 20
+timeout: 200
 # Does the service force the caching of results to be disabled
 # (only use for service that will always provided different results each run)
 disable_cache: false
@@ -68,7 +68,7 @@ update_config:
     image: ${REGISTRY}cccs/assemblyline-service-sigma:$SERVICE_TAG
   sources:
     - name: sigma
-      pattern: .*windows\/process_creation.*\.yml
+      pattern: .*windows\/.*\.yml
       uri: https://github.com/Neo23x0/sigma.git
   update_interval_seconds: 21600 # Quarter-day (every 6 hours)
 

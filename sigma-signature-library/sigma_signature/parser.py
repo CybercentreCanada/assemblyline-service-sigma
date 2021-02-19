@@ -158,7 +158,7 @@ def check_eventid(ev, rule):
         for i in id:
             if category_to_id == i:
                 return True
-    if isinstance(id, str):
+    if isinstance(id, int):
         if category_to_id == id:
             return True
     return False
@@ -178,10 +178,16 @@ def check_event(e, rules):
         # print('rule obj', rule_obj)
 
         match = check_eventid(event, rule_obj)
-        if match:
-            # skip parsing because event doesn't match
+        if not match:
+            # skip this rule because eventid doesn't match this rule
             continue
-        result = parser.parse(condition).pretty()
+        if isinstance(condition, str):
+            result = parser.parse(condition).pretty()
+        if isinstance(condition, list):
+            for c in condition:
+                result = parser.parse(c).pretty()
+                if 'True' in result:
+                    break
 
         if 'True' in result:
             if 'timeframe' in rule_obj['detection']:
