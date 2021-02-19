@@ -48,12 +48,6 @@ class EventDataSection(ResultSection):
         system_fields = event_data['Event']['System']
 
         json_body = event_data['Event']['EventData']
-        keep_fields = ['Device', 'Image','UtcTime','ProcessGuid','ProcessId','Description',
-                       'State','Version','Configuration','ConfigurationFileHash','CallTrace',
-                       'SourceProcessGUID','SourceProcessId','SourceThreadId','SourceImage',
-                       'TargetProcessGUID','TargetProcessId','TargetImage','GrantedAccess',
-                       'CommandLine','IntegrityLevel','ParentCommandLine','ParentImage',
-                       'ParentProcessGuid','ParentProcessId','ProcessGuid',]
 
         for k,v in system_fields.items():
             if k in ('Channel', 'EventID'):
