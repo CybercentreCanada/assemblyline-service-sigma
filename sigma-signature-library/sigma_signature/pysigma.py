@@ -1,6 +1,10 @@
 from . import signatures
 from . import parser
 from yaml.composer import ComposerError
+import logging
+logger = logging.getLogger('pysigma logger')
+logger.setLevel(logging.INFO)
+
 def val_file(filename):
     ps = PySigma()
     with open(filename) as fh:
@@ -12,8 +16,8 @@ def val_file(filename):
         except ComposerError:
             return False
         except KeyError as e:
-            print(filename)
-            print(e, 'not found')
+            logger.error(filename)
+            logger.error(e)
             return False
 
 class PySigma:  # what should I name it?
