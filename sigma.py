@@ -1,7 +1,6 @@
 import json
 import os
 from typing import Dict, Any
-import cProfile
 from pathlib import Path
 
 from assemblyline_v4_service.common.base import ServiceBase
@@ -13,16 +12,16 @@ FILE_UPDATE_DIRECTORY = os.environ.get('FILE_UPDATE_DIRECTORY', "/tmp/sigma_upda
 
 
 def get_rules(self):
-    SIGMA_RULES_PATH = FILE_UPDATE_DIRECTORY
+    sigma_rules_path = FILE_UPDATE_DIRECTORY
 
-    if not os.path.exists(SIGMA_RULES_PATH):
+    if not os.path.exists(sigma_rules_path):
         self.log.error("Sigma rules directory not found")
         return None
-    if SIGMA_RULES_PATH.startswith('/mount'):
+    if sigma_rules_path.startswith('/mount'):
         # Running in Container
         try:
-            rules_directory = max([os.path.join(SIGMA_RULES_PATH, d) for d in os.listdir(SIGMA_RULES_PATH)
-                               if os.path.isdir(os.path.join(SIGMA_RULES_PATH,d)) and not
+            rules_directory = max([os.path.join(sigma_rules_path, d) for d in os.listdir(sigma_rules_path)
+                               if os.path.isdir(os.path.join(sigma_rules_path,d)) and not
                                d.startswith(".tmp")], key = os.path.getctime)
         except ValueError:
             self.log.error("Sigma rules directory not found")
@@ -32,10 +31,10 @@ def get_rules(self):
         #     self.log.warning("Only one file should be in update directory")
         #     return None
         # self.log.info(f"rules list {rules_list}")
-        SIGMA_RULES_PATH = os.path.join(rules_directory,'sigma')
+        sigma_rules_path = os.path.join(rules_directory,'sigma')
 
-    self.log.info(SIGMA_RULES_PATH)
-    with open(os.path.join(SIGMA_RULES_PATH, 'sigma')) as yaml_fh:
+    self.log.info(sigma_rules_path)
+    with open(os.path.join(sigma_rules_path, 'sigma')) as yaml_fh:
         file = yaml_fh.read()
         splitted_rules = file.split('\n\n\n')
     self.log.info(f"Loaded {len(splitted_rules)} rules")
@@ -62,7 +61,6 @@ class EventDataSection(ResultSection):
 
 class SigmaHitSection(ResultSection):
     def __init__(self, title, events):
-        title = "Sigma match " + title
         sc = events[0]
         score = sc['score']
         json_body = dict(
@@ -118,7 +116,6 @@ class Sigma(ServiceBase):
         self.log.info(f"number of rules {len(self.sigma_parser.rules)}")
         if file_name.endswith('evtx'):
             self.sigma_parser.register_callback(self.sigma_hit)
-            #cProfile.runctx('self.sigma_parser.check_logfile(path)', globals(), locals(),)
             self.sigma_parser.check_logfile(path)
             self.log.info("in evtx")
             if len(self.hits) > 0:
@@ -132,8 +129,7 @@ class Sigma(ServiceBase):
                         name = tag[7:]
                         if name.startswith(('t','g','s')):
                             attack_id = name.upper()
-                        #section.add_tag("attribution.campaign", name)
-                        #section.add_tag("attribution.technique", name)
+
                     if attack_id:
                         section.set_heuristic(get_heur_id(events[0]['score']), attack_id=attack_id, signature =f"{sources[0]}.{title}")
                     else:

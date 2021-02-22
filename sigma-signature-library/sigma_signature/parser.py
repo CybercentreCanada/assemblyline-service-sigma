@@ -186,7 +186,13 @@ def check_event(e, rules):
             for c in condition:
                 result = parser.parse(c).pretty()
                 if 'True' in result:
-                    break
+                    if 'timeframe' in rule_obj['detection']:
+                        check_timeframe(rule_obj, rule_name, timed_events, event, alerts)
+                    else:
+                        callback_buildReport(alerts,
+                                             Alert(rule_name, get_description(rule_obj), event, get_level(rule_obj),
+                                                   rule_name))
+                    continue
 
         if 'True' in result:
             if 'timeframe' in rule_obj['detection']:
