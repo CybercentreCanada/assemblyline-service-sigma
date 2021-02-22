@@ -56,12 +56,10 @@ class LogicTransformer(Transformer):
     def identifier_rule(self, args):
         # Call analyze on all rules in the rule directory to find matches for each event
         hits = analyze(event, str(rule), rules[rule])
-        if isinstance(hits, list):
-            for pair in hits:
-                if args in pair:
-                    return pair[args]
-        if args in hits:
-            return hits[args]
+        for pair in hits:
+            if args in pair:
+                return pair[args]
+
 
 
     def atom_rule(self, args):

@@ -192,7 +192,7 @@ def analyze(event, rule_name, rule_dict):
 
     if isinstance(condition, str):
         matches = analyze_condition(event, rule_dict, condition, rule_name)
-        return matches
+        return [matches]
 
 
 

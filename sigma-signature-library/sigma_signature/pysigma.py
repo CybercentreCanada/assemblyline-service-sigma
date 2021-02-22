@@ -2,7 +2,7 @@ from . import signatures
 from . import parser
 from yaml.composer import ComposerError
 import logging
-logger = logging.getLogger('pysigma logger')
+logger = logging.getLogger('pysigma')
 logger.setLevel(logging.INFO)
 
 def val_file(filename):
