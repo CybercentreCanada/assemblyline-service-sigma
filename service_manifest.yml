@@ -10,8 +10,8 @@ description: >
 
 
 # Regex defining the types of files the service accepts and rejects
-accepts: .*
-rejects: empty|metadata/.*
+accepts: metadata/sysmon
+rejects: empty|
 
 # At which stage the service should run (one of: FILTER, EXTRACT, CORE, SECONDARY, POST)
 # NOTE: Stages are executed in the order defined in the list
@@ -68,7 +68,7 @@ update_config:
     image: ${REGISTRY}cccs/assemblyline-service-sigma:$SERVICE_TAG
   sources:
     - name: sigma
-      pattern: .*windows\/.*\.yml
+      pattern: .*windows\/sysmon.*\.yml
       uri: https://github.com/Neo23x0/sigma.git
   update_interval_seconds: 21600 # Quarter-day (every 6 hours)
 

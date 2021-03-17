@@ -1,13 +1,14 @@
 import json
 import os
+import xmltodict
 from typing import Dict, Any
-from pathlib import Path
 
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
-from sigma_signature import pysigma
 
+from pysigma import pysigma
+from pysigma import exceptions
 FILE_UPDATE_DIRECTORY = os.environ.get('FILE_UPDATE_DIRECTORY', "/tmp/sigma_updater_output/sigma")
 
 
@@ -40,13 +41,23 @@ def get_rules(self):
     self.log.info(f"Loaded {len(splitted_rules)} rules")
     return splitted_rules
 
+def event_mappings(event_data):
+    event_id = event_data['System']['EventID']
+    data = event_data['EventData']['Data']
+    with open('./event_mappings/eventid'+event_id) as fp:
+        correct_mapping = fp.read()
+    correct_mapping_dict = xmltodict.parse(correct_mapping)
+    return event_data
+
 
 class EventDataSection(ResultSection):
     def __init__(self, event_data):
         title = "Event Data"
-        system_fields = event_data['Event']['System']
-
-        json_body = event_data['Event']['EventData']
+        system_fields = event_data['System']
+        json_body = {}
+        ordered_dict = event_data['EventData']['Data']
+        for ordered_dict in event_data['EventData']['Data']:
+            json_body[ordered_dict['@Name']] = ordered_dict.get('#text', None)
 
         for k,v in system_fields.items():
             if k in ('Channel', 'EventID'):
@@ -57,6 +68,7 @@ class EventDataSection(ResultSection):
             body_format=BODY_FORMAT.KEY_VALUE,
             body=json.dumps(body)
         )
+
 
 
 class SigmaHitSection(ResultSection):
@@ -93,7 +105,11 @@ class Sigma(ServiceBase):
         self.hits = {}
         rules = get_rules(self)
         for rule in rules:
-            self.sigma_parser.add_signature(rule)
+            try:
+                self.sigma_parser.add_signature(rule)
+            except exceptions.UnsupportedFeature as e:
+                self.log.warning(e)
+
 
     def sigma_hit(self, alert, event):
         title = alert['title']
@@ -114,7 +130,7 @@ class Sigma(ServiceBase):
         self.log.info(f" executing {file_name}")
         #self.log.info(f"Loaded {self.sigma_parser.rules}")
         self.log.info(f"number of rules {len(self.sigma_parser.rules)}")
-        if file_name.endswith('evtx'):
+        if file_name:
             self.sigma_parser.register_callback(self.sigma_hit)
             self.sigma_parser.check_logfile(path)
             self.log.info("in evtx")
@@ -123,7 +139,7 @@ class Sigma(ServiceBase):
                 #group alerts together
                 for title, events in self.hits.items():
                     section = SigmaHitSection(title, events)
-                    tags = self.sigma_parser.rules[title]['tags']
+                    tags = self.sigma_parser.rules[title].tags
 
                     for tag in tags:
                         name = tag[7:]
@@ -137,7 +153,7 @@ class Sigma(ServiceBase):
                     self.log.info(tags)
                     for event in events:
                         #add the event data as a subsection
-                        section.add_subsection(EventDataSection((event)))
+                        section.add_subsection(EventDataSection(event))
                     hit_section.add_subsection(section)
                 result.add_section(hit_section)
             request.result = result
