@@ -41,23 +41,19 @@ def get_rules(self):
     self.log.info(f"Loaded {len(splitted_rules)} rules")
     return splitted_rules
 
-def event_mappings(event_data):
-    event_id = event_data['System']['EventID']
-    data = event_data['EventData']['Data']
-    with open('./event_mappings/eventid'+event_id) as fp:
-        correct_mapping = fp.read()
-    correct_mapping_dict = xmltodict.parse(correct_mapping)
-    return event_data
-
 
 class EventDataSection(ResultSection):
     def __init__(self, event_data):
         title = "Event Data"
-        system_fields = event_data['System']
         json_body = {}
-        ordered_dict = event_data['EventData']['Data']
-        for ordered_dict in event_data['EventData']['Data']:
-            json_body[ordered_dict['@Name']] = ordered_dict.get('#text', None)
+        if 'Event' in event_data:
+            # evtx log structured slightly different
+            system_fields = event_data['Event']['System']
+            json_body = event_data['Event']['EventData']
+        else:
+            system_fields = event_data['System']
+            for ordered_dict in event_data['EventData']['Data']:
+                json_body[ordered_dict['@Name']] = ordered_dict.get('#text', None)
 
         for k,v in system_fields.items():
             if k in ('Channel', 'EventID'):
