@@ -14,7 +14,6 @@ FILE_UPDATE_DIRECTORY = os.environ.get('FILE_UPDATE_DIRECTORY', "/tmp/sigma_upda
 
 def get_rules(self):
     sigma_rules_path = FILE_UPDATE_DIRECTORY
-
     if not os.path.exists(sigma_rules_path):
         self.log.error("Sigma rules directory not found")
         return None
@@ -60,11 +59,10 @@ class EventDataSection(ResultSection):
                 json_body[k] = v
         body = {k:v for k,v in json_body.items() if v}
         super(EventDataSection, self).__init__(
-            title_text=title,
-            body_format=BODY_FORMAT.KEY_VALUE,
-            body=json.dumps(body)
+            title_text = title,
+            body_format = BODY_FORMAT.KEY_VALUE,
+            body = json.dumps(body)
         )
-
 
 
 class SigmaHitSection(ResultSection):
@@ -72,12 +70,12 @@ class SigmaHitSection(ResultSection):
         sc = events[0]
         score = sc['score']
         json_body = dict(
-            yaml_score=score
+            yaml_score = score
         )
         super(SigmaHitSection, self).__init__(
-            title_text=title,
-            body_format=BODY_FORMAT.KEY_VALUE,
-            body=json.dumps(json_body)
+            title_text = title,
+            body_format = BODY_FORMAT.KEY_VALUE,
+            body = json.dumps(json_body)
         )
 
 
@@ -95,7 +93,7 @@ def get_heur_id(level):
 
 
 class Sigma(ServiceBase):
-    def __init__(self, config=None):
+    def __init__(self, config = None):
         super(Sigma, self).__init__(config)
         self.sigma_parser = pysigma.PySigma()
         self.hits = {}
