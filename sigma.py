@@ -142,8 +142,10 @@ class Sigma(ServiceBase):
 
                     if attack_id:
                         section.set_heuristic(get_heur_id(events[0]['score']), attack_id=attack_id, signature =f"{sources[0]}.{title}")
+                        section.add_tag(f"file.rule.{sources[0]}", f"{sources[0].upper()}.{title}")
                     else:
                         section.set_heuristic(get_heur_id(events[0]['score']), signature=f"{sources[0]}.{title}")
+                        section.add_tag(f"file.rule.{sources[0]}", f"{sources[0].upper()}.{title}")
                     self.log.info(tags)
                     for event in events:
                         #add the event data as a subsection
