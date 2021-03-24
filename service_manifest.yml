@@ -11,7 +11,7 @@ description: >
 
 # Regex defining the types of files the service accepts and rejects
 accepts: metadata/sysmon
-rejects: empty|
+rejects: empty
 
 # At which stage the service should run (one of: FILTER, EXTRACT, CORE, SECONDARY, POST)
 # NOTE: Stages are executed in the order defined in the list
