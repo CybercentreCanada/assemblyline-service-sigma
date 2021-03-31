@@ -121,13 +121,12 @@ class Sigma(ServiceBase):
         file_name = request.file_name
         source = self.service_attributes.update_config.sources
         sources = [s['name'] for s in source]
-        self.log.info(f" executing {file_name}")
+        self.log.info(f" Executing {file_name}")
         #self.log.info(f"Loaded {self.sigma_parser.rules}")
         self.log.info(f"number of rules {len(self.sigma_parser.rules)}")
         if file_name:
             self.sigma_parser.register_callback(self.sigma_hit)
             self.sigma_parser.check_logfile(path)
-            self.log.info("in evtx")
             if len(self.hits) > 0:
                 hit_section = ResultSection('Events detected as suspicious')
                 #group alerts together
