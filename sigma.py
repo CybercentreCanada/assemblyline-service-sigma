@@ -26,14 +26,8 @@ def get_rules(self):
         except ValueError:
             self.log.error("Sigma rules directory not found")
             return None
-        # rules_list = [str(f) for f in Path(rules_directory).rglob("*") if os.path.isfile(str(f))]
-        # if len(rules_list) > 1:
-        #     self.log.warning("Only one file should be in update directory")
-        #     return None
-        # self.log.info(f"rules list {rules_list}")
         sigma_rules_path = os.path.join(rules_directory,'sigma')
 
-    self.log.info(sigma_rules_path)
     with open(os.path.join(sigma_rules_path, 'sigma')) as yaml_fh:
         file = yaml_fh.read()
         splitted_rules = file.split('\n\n\n')
@@ -122,37 +116,33 @@ class Sigma(ServiceBase):
         source = self.service_attributes.update_config.sources
         sources = [s['name'] for s in source]
         self.log.info(f" Executing {file_name}")
-        #self.log.info(f"Loaded {self.sigma_parser.rules}")
-        self.log.info(f"number of rules {len(self.sigma_parser.rules)}")
-        if file_name:
-            self.sigma_parser.register_callback(self.sigma_hit)
-            self.sigma_parser.check_logfile(path)
-            if len(self.hits) > 0:
-                hit_section = ResultSection('Events detected as suspicious')
-                #group alerts together
-                for title, events in self.hits.items():
-                    section = SigmaHitSection(title, events)
-                    tags = self.sigma_parser.rules[title].tags
+        self.log.info(f"Number of rules {len(self.sigma_parser.rules)}")
 
-                    for tag in tags:
-                        name = tag[7:]
-                        if name.startswith(('t','g','s')):
-                            attack_id = name.upper()
+        self.sigma_parser.register_callback(self.sigma_hit)
+        self.sigma_parser.check_logfile(path)
+        if len(self.hits) > 0:
+            hit_section = ResultSection('Events detected as suspicious')
+            #group alerts together
+            for title, events in self.hits.items():
+                section = SigmaHitSection(title, events)
+                tags = self.sigma_parser.rules[title].tags
+                for tag in tags:
+                    name = tag[7:]
+                    if name.startswith(('t','g','s')):
+                        attack_id = name.upper()
 
-                    if attack_id:
-                        section.set_heuristic(get_heur_id(events[0]['score']), attack_id=attack_id, signature =f"{sources[0]}.{title}")
-                        section.add_tag(f"file.rule.{sources[0]}", f"{sources[0]}.{title}")
-                    else:
-                        section.set_heuristic(get_heur_id(events[0]['score']), signature=f"{sources[0]}.{title}")
-                        section.add_tag(f"file.rule.{sources[0]}", f"{sources[0]}.{title}")
-                    self.log.info(tags)
-                    for event in events:
-                        #add the event data as a subsection
-                        section.add_subsection(EventDataSection(event))
-                    hit_section.add_subsection(section)
-                result.add_section(hit_section)
-            request.result = result
-        else:
-            self.log.info(f" {file_name} is not an EVTX file")
-            request.result = result
+                if attack_id:
+                    section.set_heuristic(get_heur_id(events[0]['score']), attack_id=attack_id, signature =f"{sources[0]}.{title}")
+                    section.add_tag(f"file.rule.{sources[0]}", f"{sources[0]}.{title}")
+                else:
+                    section.set_heuristic(get_heur_id(events[0]['score']), signature=f"{sources[0]}.{title}")
+                    section.add_tag(f"file.rule.{sources[0]}", f"{sources[0]}.{title}")
+                self.log.info(tags)
+                for event in events:
+                    #add the event data as a subsection
+                    section.add_subsection(EventDataSection(event))
+                hit_section.add_subsection(section)
+            result.add_section(hit_section)
+        request.result = result
+
 
