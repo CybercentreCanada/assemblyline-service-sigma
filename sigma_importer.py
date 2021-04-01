@@ -4,7 +4,7 @@ import yaml
 
 from assemblyline.common import forge
 from assemblyline.odm.models.signature import Signature
-from sigma_signature import pysigma
+from pysigma import pysigma
 
 ps = pysigma.PySigma()
 

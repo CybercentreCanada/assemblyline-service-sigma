@@ -10,6 +10,7 @@ from typing import List, Dict, Any
 from urllib.parse import urlparse
 from zipfile import ZipFile
 from yaml.composer import ComposerError
+from pysigma.exceptions import UnsupportedFeature
 
 import certifi
 import requests
@@ -21,7 +22,7 @@ from assemblyline.common import log as al_log, forge
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.isotime import iso_to_epoch
 from sigma_importer import SigmaImporter
-from sigma_signature.pysigma import val_file
+from pysigma.pysigma import val_file
 
 al_log.init_logging('updater.sigma')
 classification = forge.get_classification()
@@ -237,10 +238,13 @@ def sigma_update() -> None:
                 for file, sha256 in files:
                     files_sha256.setdefault(source_name, {})
                     if previous_hash.get(source_name, {}).get(file, None) != sha256:
-                        if val_file(file):
-                            files_sha256[source_name][file] = sha256
-                        else:
-                            LOGGER.warning(f"{file} was not imported due to failed validation")
+                        try:
+                            if val_file(file):
+                                files_sha256[source_name][file] = sha256
+                            else:
+                                LOGGER.warning(f"{file} was not imported due to failed validation")
+                        except UnsupportedFeature as e:
+                            LOGGER.warning(e)
             else:
                 files = url_download(source, previous_update=previous_update)
                 for file, sha256 in files:
@@ -276,9 +280,10 @@ def sigma_update() -> None:
                 os.makedirs(UPDATE_OUTPUT_PATH)
 
             temp_zip_file = os.path.join(UPDATE_OUTPUT_PATH, 'temp.zip')
+
             al_client.signature.download(output=temp_zip_file,
                                          query="type:sigma AND (status:NOISY OR status:DEPLOYED)")
-
+            LOGGER.info(f"sigs downloaded in  {os.listdir(UPDATE_OUTPUT_PATH)}")
             if os.path.exists(temp_zip_file):
                 with ZipFile(temp_zip_file, 'r') as zip_f:
                     zip_f.extractall(UPDATE_OUTPUT_PATH)

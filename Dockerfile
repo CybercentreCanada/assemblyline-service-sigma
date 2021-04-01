@@ -4,22 +4,21 @@ ENV SERVICE_PATH sigma.Sigma
 
 USER root
 
-RUN echo 'deb http://deb.debian.org/debian stretch-backports main' >> /etc/apt/sources.list
 
 # Install APT dependancies
-RUN apt-get update && apt-get install -y git libssl1.1 libmagic1 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git libssl1.1  && rm -rf /var/lib/apt/lists/*
 
 FROM base AS build
 
 # Install APT dependancies
-RUN apt-get update && apt-get install -y git libssl-dev libmagic-dev automake libtool pkg-config make gcc wget  && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git libssl-dev  && rm -rf /var/lib/apt/lists/*
 
 # Install PIP dependancies
 USER assemblyline
 RUN touch /tmp/before-pip
 COPY requirements.txt requirements.txt
-COPY sigma-signature-library sigma-signature-library
-RUN pip install ./sigma-signature-library -r sigma-signature-library/requirements.txt \
+RUN git clone https://github.com/CybercentreCanada/pysigma.git
+RUN pip install ./pysigma -r pysigma/requirements.txt \
 --no-cache-dir  --user -r requirements.txt && rm -rf ~/.cache/pip
 
 USER root
