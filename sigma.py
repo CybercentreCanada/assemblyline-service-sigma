@@ -95,7 +95,7 @@ class Sigma(ServiceBase):
         for rule in rules:
             try:
                 self.sigma_parser.add_signature(rule)
-            except exceptions.UnsupportedFeature as e:
+            except Exception as e:
                 self.log.warning(e)
 
 
@@ -123,9 +123,10 @@ class Sigma(ServiceBase):
         if len(self.hits) > 0:
             hit_section = ResultSection('Events detected as suspicious')
             #group alerts together
-            for title, events in self.hits.items():
+            for id, events in self.hits.items():
+                title = self.sigma_parser.rules[id].title
                 section = SigmaHitSection(title, events)
-                tags = self.sigma_parser.rules[title].tags
+                tags = self.sigma_parser.rules[id].tags
                 for tag in tags:
                     name = tag[7:]
                     if name.startswith(('t','g','s')):

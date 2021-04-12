@@ -244,7 +244,8 @@ def sigma_update() -> None:
                             else:
                                 LOGGER.warning(f"{file} was not imported due to failed validation")
                         except UnsupportedFeature as e:
-                            LOGGER.warning(e)
+                            LOGGER.warning(f"{file} | {e}")
+
             else:
                 files = url_download(source, previous_update=previous_update)
                 for file, sha256 in files:
