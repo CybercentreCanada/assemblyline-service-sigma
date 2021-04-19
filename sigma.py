@@ -100,12 +100,12 @@ class Sigma(ServiceBase):
 
 
     def sigma_hit(self, alert, event):
-        title = alert['title']
-        if title not in self.hits:
+        id = alert['id']
+        if id not in self.hits:
             event['score'] = alert['score']
-            self.hits[title] = [event]
+            self.hits[id] = [event]
         else:
-            self.hits[title].append(event)
+            self.hits[id].append(event)
 
 
     def execute(self, request: ServiceRequest) -> Dict[str, Any]:
