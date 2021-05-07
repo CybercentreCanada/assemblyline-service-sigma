@@ -27,8 +27,8 @@ def get_rules(self):
             self.log.error("Sigma rules directory not found")
             return None
         sigma_rules_path = os.path.join(rules_directory,'sigma')
-
-    with open(os.path.join(sigma_rules_path, 'sigma')) as yaml_fh:
+    self.log.error(os.listdir(sigma_rules_path))
+    with open(sigma_rules_path) as yaml_fh:
         file = yaml_fh.read()
         splitted_rules = file.split('\n\n\n')
     self.log.info(f"Loaded {len(splitted_rules)} rules")
