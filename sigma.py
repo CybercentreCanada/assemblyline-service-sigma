@@ -14,6 +14,10 @@ FILE_UPDATE_DIRECTORY = os.environ.get('FILE_UPDATE_DIRECTORY', "/tmp/sigma_upda
 
 def get_rules(self):
     sigma_rules_path = FILE_UPDATE_DIRECTORY
+    source = self.service_attributes.update_config.sources
+    signature_sources = [s['name'] for s in source]
+    split_rules = []
+
     if not os.path.exists(sigma_rules_path):
         self.log.error("Sigma rules directory not found")
         return None
@@ -27,12 +31,14 @@ def get_rules(self):
             self.log.error("Sigma rules directory not found")
             return None
         sigma_rules_path = os.path.join(rules_directory,'sigma')
-    self.log.error(os.listdir(sigma_rules_path))
-    with open(sigma_rules_path) as yaml_fh:
-        file = yaml_fh.read()
-        splitted_rules = file.split('\n\n\n')
-    self.log.info(f"Loaded {len(splitted_rules)} rules")
-    return splitted_rules
+    for signature in signature_sources:
+        with open(os.path.join(sigma_rules_path, signature)) as yaml_fh:
+            file = yaml_fh.read()
+            rules = file.split('\n\n\n')
+            for rule in rules:
+                split_rules.append(rule)
+    self.log.info(f"Loaded {len(split_rules)} rules")
+    return split_rules
 
 
 class EventDataSection(ResultSection):
