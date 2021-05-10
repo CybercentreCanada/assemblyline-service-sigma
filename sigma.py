@@ -16,7 +16,7 @@ def get_rules(self):
     sigma_rules_path = FILE_UPDATE_DIRECTORY
     source = self.service_attributes.update_config.sources
     signature_sources = [s['name'] for s in source]
-    splitted_rules = []
+    split_rules = []
 
     if not os.path.exists(sigma_rules_path):
         self.log.error("Sigma rules directory not found")
