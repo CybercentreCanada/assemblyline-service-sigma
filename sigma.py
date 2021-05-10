@@ -36,9 +36,9 @@ def get_rules(self):
             file = yaml_fh.read()
             rules = file.split('\n\n\n')
             for rule in rules:
-                splitted_rules.append(rule)
-    self.log.info(f"Loaded {len(splitted_rules)} rules")
-    return splitted_rules
+                split_rules.append(rule)
+    self.log.info(f"Loaded {len(split_rules)} rules")
+    return split_rules
 
 
 class EventDataSection(ResultSection):
