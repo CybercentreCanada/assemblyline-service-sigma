@@ -121,10 +121,8 @@ class Sigma(ServiceBase):
         self.hits = {}  # clear the hits dict
         path = request.file_path
         file_name = request.file_name
-        sources = self.service_attributes.update_config.sources
         self.log.info(f" Executing {file_name}")
         self.log.info(f"Number of rules {len(self.sigma_parser.rules)}")
-
         self.sigma_parser.register_callback(self.sigma_hit)
         self.sigma_parser.check_logfile(path)
         if len(self.hits) > 0:
@@ -145,7 +143,6 @@ class Sigma(ServiceBase):
                 else:
                     section.set_heuristic(get_heur_id(events[0]['score']), signature=f"{source}.{title}")
                     section.add_tag(f"file.rule.{source}", f"{source}.{title}")
-                self.log.info(tags)
                 for event in events:
                     #add the event data as a subsection
                     section.add_subsection(EventDataSection(event))
