@@ -36,6 +36,7 @@ def get_rules(self):
             file = yaml_fh.read()
             rules = file.split('\n\n\n')
             for rule in rules:
+                rule = rule + f'\nsignature_source: {signature}'
                 split_rules.append(rule)
     self.log.info(f"Loaded {len(split_rules)} rules")
     return split_rules
