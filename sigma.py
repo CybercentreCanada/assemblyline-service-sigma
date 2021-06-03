@@ -110,6 +110,7 @@ class Sigma(ServiceBase):
         id = alert['id']
         if id not in self.hits:
             event['score'] = alert['score']
+            event['signature_source'] = alert['signature_source']
             self.hits[id] = [event]
         else:
             self.hits[id].append(event)
@@ -120,8 +121,7 @@ class Sigma(ServiceBase):
         self.hits = {}  # clear the hits dict
         path = request.file_path
         file_name = request.file_name
-        source = self.service_attributes.update_config.sources
-        sources = [s['name'] for s in source]
+        sources = self.service_attributes.update_config.sources
         self.log.info(f" Executing {file_name}")
         self.log.info(f"Number of rules {len(self.sigma_parser.rules)}")
 
@@ -138,13 +138,13 @@ class Sigma(ServiceBase):
                     name = tag[7:]
                     if name.startswith(('t','g','s')):
                         attack_id = name.upper()
-
+                source = events[0]['signature_source']
                 if attack_id:
-                    section.set_heuristic(get_heur_id(events[0]['score']), attack_id=attack_id, signature =f"{sources[0]}.{title}")
-                    section.add_tag(f"file.rule.{sources[0]}", f"{sources[0]}.{title}")
+                    section.set_heuristic(get_heur_id(events[0]['score']), attack_id=attack_id, signature =f"{source}.{title}")
+                    section.add_tag(f"file.rule.{source}", f"{source}.{title}")
                 else:
-                    section.set_heuristic(get_heur_id(events[0]['score']), signature=f"{sources[0]}.{title}")
-                    section.add_tag(f"file.rule.{sources[0]}", f"{sources[0]}.{title}")
+                    section.set_heuristic(get_heur_id(events[0]['score']), signature=f"{source}.{title}")
+                    section.add_tag(f"file.rule.{source}", f"{source}.{title}")
                 self.log.info(tags)
                 for event in events:
                     #add the event data as a subsection
