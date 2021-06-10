@@ -8,6 +8,7 @@ from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
 
 from pysigma import pysigma
+
 FILE_UPDATE_DIRECTORY = os.environ.get('FILE_UPDATE_DIRECTORY', "/tmp/sigma_updater_output/sigma")
 
 
@@ -24,12 +25,12 @@ def get_rules(self) -> Optional[List[str]]:
         # Running in Container
         try:
             rules_directory = max([os.path.join(sigma_rules_path, d) for d in os.listdir(sigma_rules_path)
-                               if os.path.isdir(os.path.join(sigma_rules_path,d)) and not
-                               d.startswith(".tmp")], key = os.path.getctime)
+                                   if os.path.isdir(os.path.join(sigma_rules_path, d)) and not
+                                   d.startswith(".tmp")], key=os.path.getctime)
         except ValueError:
             self.log.error("Sigma rules directory not found")
             return None
-        sigma_rules_path = os.path.join(rules_directory,'sigma')
+        sigma_rules_path = os.path.join(rules_directory, 'sigma')
     for signature in signature_sources:
         with open(os.path.join(sigma_rules_path, signature)) as yaml_fh:
             file = yaml_fh.read()
@@ -54,14 +55,14 @@ class EventDataSection(ResultSection):
             for ordered_dict in event_data['EventData']['Data']:
                 json_body[ordered_dict['@Name']] = ordered_dict.get('#text', None)
 
-        for k,v in system_fields.items():
+        for k, v in system_fields.items():
             if k in ('Channel', 'EventID'):
                 json_body[k] = v
-        body = {k:v for k,v in json_body.items() if v}
+        body = {k: v for k, v in json_body.items() if v}
         super(EventDataSection, self).__init__(
-            title_text = title,
-            body_format = BODY_FORMAT.KEY_VALUE,
-            body = json.dumps(body)
+            title_text=title,
+            body_format=BODY_FORMAT.KEY_VALUE,
+            body=json.dumps(body)
         )
 
 
@@ -69,12 +70,12 @@ class SigmaHitSection(ResultSection):
     def __init__(self, title: str, events: Dict) -> None:
         score = events[0]['score']
         json_body = dict(
-            yaml_score = score
+            yaml_score=score
         )
         super(SigmaHitSection, self).__init__(
-            title_text = title,
-            body_format = BODY_FORMAT.KEY_VALUE,
-            body = json.dumps(json_body)
+            title_text=title,
+            body_format=BODY_FORMAT.KEY_VALUE,
+            body=json.dumps(json_body)
         )
 
 
@@ -103,7 +104,6 @@ class Sigma(ServiceBase):
             except Exception as e:
                 self.log.warning(e)
 
-
     def sigma_hit(self, alert: Dict, event: Dict) -> None:
         id = alert['id']
         if id not in self.hits:
@@ -113,8 +113,7 @@ class Sigma(ServiceBase):
         else:
             self.hits[id].append(event)
 
-
-    def execute(self, request: ServiceRequest) -> Dict[str, Any]:
+    def execute(self, request: ServiceRequest) -> None:
         result = Result()
         self.hits = {}  # clear the hits dict
         path = request.file_path
@@ -125,27 +124,26 @@ class Sigma(ServiceBase):
         self.sigma_parser.check_logfile(path)
         if len(self.hits) > 0:
             hit_section = ResultSection('Events detected as suspicious')
-            #group alerts together
+            # group alerts together
             for id, events in self.hits.items():
                 title = self.sigma_parser.rules[id].title
                 section = SigmaHitSection(title, events)
                 tags = self.sigma_parser.rules[id].tags
                 for tag in tags:
                     name = tag[7:]
-                    if name.startswith(('t','g','s')):
+                    if name.startswith(('t', 'g', 's')):
                         attack_id = name.upper()
                 source = events[0]['signature_source']
                 if attack_id:
-                    section.set_heuristic(get_heur_id(events[0]['score']), attack_id=attack_id, signature =f"{source}.{title}")
+                    section.set_heuristic(get_heur_id(events[0]['score']), attack_id=attack_id,
+                                          signature=f"{source}.{title}")
                     section.add_tag(f"file.rule.{source}", f"{source}.{title}")
                 else:
                     section.set_heuristic(get_heur_id(events[0]['score']), signature=f"{source}.{title}")
                     section.add_tag(f"file.rule.{source}", f"{source}.{title}")
                 for event in events:
-                    #add the event data as a subsection
+                    # add the event data as a subsection
                     section.add_subsection(EventDataSection(event))
                 hit_section.add_subsection(section)
             result.add_section(hit_section)
         request.result = result
-
-
