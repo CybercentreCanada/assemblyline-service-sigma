@@ -1,18 +1,17 @@
 import json
 import os
-import xmltodict
-from typing import Dict, Any
+
+from typing import Dict, List, Any, Optional
 
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
 
 from pysigma import pysigma
-from pysigma import exceptions
 FILE_UPDATE_DIRECTORY = os.environ.get('FILE_UPDATE_DIRECTORY', "/tmp/sigma_updater_output/sigma")
 
 
-def get_rules(self):
+def get_rules(self) -> Optional[List[str]]:
     sigma_rules_path = FILE_UPDATE_DIRECTORY
     source = self.service_attributes.update_config.sources
     signature_sources = [s['name'] for s in source]
@@ -43,7 +42,7 @@ def get_rules(self):
 
 
 class EventDataSection(ResultSection):
-    def __init__(self, event_data):
+    def __init__(self, event_data: Dict) -> None:
         title = "Event Data"
         json_body = {}
         if 'Event' in event_data:
@@ -67,9 +66,8 @@ class EventDataSection(ResultSection):
 
 
 class SigmaHitSection(ResultSection):
-    def __init__(self, title, events):
-        sc = events[0]
-        score = sc['score']
+    def __init__(self, title: str, events: Dict) -> None:
+        score = events[0]['score']
         json_body = dict(
             yaml_score = score
         )
@@ -80,7 +78,7 @@ class SigmaHitSection(ResultSection):
         )
 
 
-def get_heur_id(level):
+def get_heur_id(level: str) -> int:
     if level == "critical":
         return 1
     elif level == "high":
@@ -94,7 +92,7 @@ def get_heur_id(level):
 
 
 class Sigma(ServiceBase):
-    def __init__(self, config = None):
+    def __init__(self, config: Dict = None) -> None:
         super(Sigma, self).__init__(config)
         self.sigma_parser = pysigma.PySigma()
         self.hits = {}
@@ -106,7 +104,7 @@ class Sigma(ServiceBase):
                 self.log.warning(e)
 
 
-    def sigma_hit(self, alert, event):
+    def sigma_hit(self, alert: Dict, event: Dict) -> None:
         id = alert['id']
         if id not in self.hits:
             event['score'] = alert['score']
