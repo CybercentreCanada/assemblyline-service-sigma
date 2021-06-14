@@ -1,7 +1,7 @@
 import json
 import os
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Optional
 
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
@@ -129,10 +129,11 @@ class Sigma(ServiceBase):
                 title = self.sigma_parser.rules[id].title
                 section = SigmaHitSection(title, events)
                 tags = self.sigma_parser.rules[id].tags
-                for tag in tags:
-                    name = tag[7:]
-                    if name.startswith(('t', 'g', 's')):
-                        attack_id = name.upper()
+                if tags:
+                    for tag in tags:
+                        name = tag[7:]
+                        if name.startswith(('t', 'g', 's')):
+                            attack_id = name.upper()
                 source = events[0]['signature_source']
                 if attack_id:
                     section.set_heuristic(get_heur_id(events[0]['score']), attack_id=attack_id,
