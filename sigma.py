@@ -129,6 +129,7 @@ class Sigma(ServiceBase):
                 title = self.sigma_parser.rules[id].title
                 section = SigmaHitSection(title, events)
                 tags = self.sigma_parser.rules[id].tags
+                attack_id = ""
                 if tags:
                     for tag in tags:
                         name = tag[7:]
