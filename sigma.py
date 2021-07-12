@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 
@@ -106,12 +107,13 @@ class Sigma(ServiceBase):
 
     def sigma_hit(self, alert: Dict, event: Dict) -> None:
         id = alert['id']
+        copied_event = copy.deepcopy(event)
         if id not in self.hits:
-            event['score'] = alert['score']
-            event['signature_source'] = alert['signature_source']
-            self.hits[id] = [event]
+            copied_event['score'] = alert['score']
+            copied_event['signature_source'] = alert['signature_source']
+            self.hits[id] = [copied_event]
         else:
-            self.hits[id].append(event)
+            self.hits[id].append(copied_event)
 
     def execute(self, request: ServiceRequest) -> None:
         result = Result()
