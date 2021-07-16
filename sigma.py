@@ -1,13 +1,15 @@
 import copy
 import json
 import os
+import re
 
 from typing import Dict, List, Optional
 
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
-
+from assemblyline.odm.base import DOMAIN_REGEX, IP_REGEX, FULL_URI
+URL_REGEX = re.compile(FULL_URI.lstrip("^").rstrip("$"))
 from pysigma import pysigma
 
 FILE_UPDATE_DIRECTORY = os.environ.get('FILE_UPDATE_DIRECTORY', "/tmp/sigma_updater_output/sigma")
@@ -59,6 +61,15 @@ class EventDataSection(ResultSection):
         for k, v in system_fields.items():
             if k in ('Channel', 'EventID'):
                 json_body[k] = v
+        if 'CommandLine' in json_body:
+            text = json_body['CommandLine']
+            match = re.search(URL_REGEX, text)
+            if match:
+                uris = set(re.findall(URL_REGEX, text))
+                for uri in uris:
+                    self.add_tag("network.static.uri", uri)
+                    #TODO add tags correctly to section
+
         body = {k: v for k, v in json_body.items() if v}
         super(EventDataSection, self).__init__(
             title_text=title,
