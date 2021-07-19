@@ -11,6 +11,12 @@ from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FO
 from pysigma import pysigma
 
 FILE_UPDATE_DIRECTORY = os.environ.get('FILE_UPDATE_DIRECTORY', "/tmp/sigma_updater_output/sigma")
+SCORE_HEUR_MAPPING = {
+    "critical": 1,
+    "high": 2,
+    "medium": 3,
+    "low": 4
+}
 
 
 def get_rules(self) -> Optional[List[str]]:
@@ -80,19 +86,6 @@ class SigmaHitSection(ResultSection):
         )
 
 
-def get_heur_id(level: str) -> int:
-    if level == "critical":
-        return 1
-    elif level == "high":
-        return 2
-    elif level == "medium":
-        return 3
-    elif level == "low":
-        return 4
-    else:
-        return 0
-
-
 class Sigma(ServiceBase):
     def __init__(self, config: Dict = None) -> None:
         super(Sigma, self).__init__(config)
@@ -131,20 +124,20 @@ class Sigma(ServiceBase):
                 title = self.sigma_parser.rules[id].title
                 section = SigmaHitSection(title, events)
                 tags = self.sigma_parser.rules[id].tags
-                attack_id = ""
+                attack_id = None
                 if tags:
                     for tag in tags:
                         name = tag[7:]
                         if name.startswith(('t', 'g', 's')):
                             attack_id = name.upper()
                 source = events[0]['signature_source']
-                if attack_id:
-                    section.set_heuristic(get_heur_id(events[0]['score']), attack_id=attack_id,
-                                          signature=f"{source}.{title}")
-                    section.add_tag(f"file.rule.{source}", f"{source}.{title}")
+                heur_id = SCORE_HEUR_MAPPING.get(events[0]['score'], None)
+                if heur_id:
+                    section.set_heuristic(heur_id, attack_id=attack_id, signature=f"{source}.{title}")
                 else:
-                    section.set_heuristic(get_heur_id(events[0]['score']), signature=f"{source}.{title}")
-                    section.add_tag(f"file.rule.{source}", f"{source}.{title}")
+                    self.log.warning(f"Unknown score-heuristic mapping for: {events[0]['score']}")
+                section.add_tag(f"file.rule.{source}", f"{source}.{title}")
+
                 for event in events:
                     # add the event data as a subsection
                     section.add_subsection(EventDataSection(event))
