@@ -6,9 +6,6 @@ version: $SERVICE_TAG
 description: >
   Service for checking sigma logs from cuckoo against rules
 
-
-
-
 # Regex defining the types of files the service accepts and rejects
 accepts: metadata/sysmon
 rejects: empty
@@ -35,36 +32,44 @@ is_external: false
 # Number of concurrent services allowed to run at the same time
 licence_count: 1
 
-
 # Service heuristic blocks: List of heuristics object that define the different heuristics used in the service
 heuristics:
   - heur_id: 1
     name: Sigma Critical alert
     score: 1000
-    filetype: '*'
+    filetype: "*"
     description: Sigma hit
   - heur_id: 2
     name: Sigma High alert
     score: 500
-    filetype: '*'
+    filetype: "*"
     description: Sigma hit
   - heur_id: 3
     name: Sigma Medium alert
     score: 100
-    filetype: '*'
+    filetype: "*"
     description: Sigma hit
   - heur_id: 4
     name: Sigma Low alert
     score: 10
-    filetype: '*'
+    filetype: "*"
     description: Sigma hit
+
+dependencies:
+  updates:
+    container:
+      allow_internet_access: true
+      command: ["python", "-m", "sigma_.update_server"]
+      image: ${REGISTRY}cccs/assemblyline-service-sigma:$SERVICE_TAG
+      ports: ["5003"]
+    run_as_core: True
 
 update_config:
   generates_signatures: true
   method: run
   run_options:
     allow_internet_access: true
-    command: ["python", "-m", "sigma_updater"]
+    command: ["python", "-m", "sigma_.sigma_updater"]
     image: ${REGISTRY}cccs/assemblyline-service-sigma:$SERVICE_TAG
   sources:
     - name: sigma
@@ -76,9 +81,7 @@ update_config:
 #  - the name of the docker container that will be created
 #  - cpu and ram allocation by the container
 docker_config:
-
   allow_internet_access: true
   image: ${REGISTRY}cccs/assemblyline-service-sigma:$SERVICE_TAG
   cpu_cores: 1.0
   ram_mb: 1024
-

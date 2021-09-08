@@ -1,7 +1,7 @@
 ARG branch=latest
 FROM cccs/assemblyline-v4-service-base:$branch AS base
 
-ENV SERVICE_PATH sigma.Sigma
+ENV SERVICE_PATH sigma_.sigma.Sigma
 
 USER root
 
@@ -20,7 +20,10 @@ RUN touch /tmp/before-pip
 COPY requirements.txt requirements.txt
 RUN git clone https://github.com/CybercentreCanada/pysigma.git
 RUN pip install ./pysigma -r pysigma/requirements.txt \
---no-cache-dir  --user -r requirements.txt && rm -rf ~/.cache/pip
+    --no-cache-dir  --user -r requirements.txt && rm -rf ~/.cache/pip
+
+# Install packages for update-server
+RUN pip install gunicorn flask && rm -rf ~/.cache/pip
 
 USER root
 

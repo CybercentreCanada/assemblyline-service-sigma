@@ -1,4 +1,3 @@
-import glob
 import json
 import logging
 import os
@@ -60,7 +59,7 @@ def url_download(source: Dict[str, Any], previous_update=None) -> List:
 
     LOGGER.info(f"{name} source is configured to {'ignore SSL errors' if ignore_ssl_errors else 'verify SSL'}.")
     if ca_cert:
-        LOGGER.info(f"A CA certificate has been provided with this source.")
+        LOGGER.info("A CA certificate has been provided with this source.")
         add_cacert(ca_cert)
 
     # Create a requests session
@@ -148,7 +147,7 @@ def git_clone_repo(source: Dict[str, Any], previous_update=None) -> List:
         git_env['GIT_SSL_NO_VERIFY'] = 1
 
     if ca_cert:
-        LOGGER.info(f"A CA certificate has been provided with this source.")
+        LOGGER.info("A CA certificate has been provided with this source.")
         add_cacert(ca_cert)
         git_env['GIT_SSL_CAINFO'] = certifi.where()
 
@@ -209,7 +208,7 @@ def sigma_update() -> None:
 
         # Exit if no update sources given
         if 'sources' not in update_config.keys() or not update_config['sources']:
-            LOGGER.error(f"Update configuration does not contain any source to update from")
+            LOGGER.error("Update configuration does not contain any source to update from")
             exit()
 
         # Initialise al_client
@@ -218,7 +217,7 @@ def sigma_update() -> None:
         api_key = update_config['api_key']
         LOGGER.info(f"Connecting to Assemblyline API: {server}...")
         al_client = get_client(server, apikey=(user, api_key), verify=False)
-        LOGGER.info(f"Connected!")
+        LOGGER.info("Connected!")
 
         # Parse updater configuration
         previous_update = update_config.get('previous_update', None)
@@ -264,7 +263,8 @@ def sigma_update() -> None:
                 default_classification = source_default_classification[source]
                 for file in source_val.keys():
                     try:
-                        total_imported += sigma_importer.import_file(file, source, default_classification=default_classification)
+                        total_imported += sigma_importer.import_file(file, source,
+                                                                     default_classification=default_classification)
                     except ValueError:
                         LOGGER.warning(f"{file} failed to import due to a Sigma error")
                     except ComposerError:
@@ -295,9 +295,9 @@ def sigma_update() -> None:
             with open(os.path.join(UPDATE_OUTPUT_PATH, 'response.yaml'), 'w') as yml_fh:
                 yaml.safe_dump(dict(hash=json.dumps(files_sha256)), yml_fh)
 
-            LOGGER.info(f"New ruleset successfully downloaded and ready to use")
+            LOGGER.info("New ruleset successfully downloaded and ready to use")
 
-        LOGGER.info(f"Sigma updater completed successfully")
+        LOGGER.info("Sigma updater completed successfully")
     except Exception:
         LOGGER.exception("Updater ended with an exception!")
 

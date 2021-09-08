@@ -29,12 +29,10 @@ class SigmaImporter:
         signature_string = signature.read()
         signature_yaml = yaml.safe_load(signature_string)
 
-
         order = 1
         upload_list = []
         name = signature_yaml.get('id', None)
         status = "DEPLOYED"
-
 
         sig = Signature(dict(
             classification=default_classification or self.classification.UNRESTRICTED,
@@ -64,7 +62,7 @@ class SigmaImporter:
                 ps.add_signature(f)
 
                 return self._save_signatures(f, source, cur_file,
-                                         default_classification=default_classification)
+                                             default_classification=default_classification)
 
         else:
             raise Exception(f"File {cur_file} does not exists.")
