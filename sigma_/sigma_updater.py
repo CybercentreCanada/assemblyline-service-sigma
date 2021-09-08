@@ -9,7 +9,6 @@ from typing import List, Dict, Any
 from urllib.parse import urlparse
 from zipfile import ZipFile
 from yaml.composer import ComposerError
-from pysigma.exceptions import UnsupportedFeature
 
 import certifi
 import requests
@@ -22,6 +21,7 @@ from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.isotime import iso_to_epoch
 from sigma_importer import SigmaImporter
 from pysigma.pysigma import val_file
+from pysigma.exceptions import UnsupportedFeature
 
 al_log.init_logging('updater.sigma')
 classification = forge.get_classification()

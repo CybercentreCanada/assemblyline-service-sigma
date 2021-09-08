@@ -14,7 +14,7 @@ from assemblyline.common.digests import get_sha256_for_file
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Result, ResultSection
-from pysigma import pysigma
+from pysigma.pysigma import PySigma
 
 UPDATES_HOST = os.environ.get('updates_host')
 UPDATES_PORT = os.environ.get('updates_port')
@@ -98,7 +98,7 @@ class SigmaHitSection(ResultSection):
 class Sigma(ServiceBase):
     def __init__(self, config: Dict = None) -> None:
         super(Sigma, self).__init__(config)
-        self.sigma_parser = pysigma.PySigma()
+        self.sigma_parser = PySigma()
         self.hits = {}
 
         # Updater-related
@@ -112,6 +112,21 @@ class Sigma(ServiceBase):
         all_sha256s = [get_sha256_for_file(f) for f in self.rules_list]
 
         self.log.info(f"Sigma will load the following rule files: {self.rules_list}")
+
+        # Signature importer doesn't suppose loading rules en masse
+        temp_list = []
+        signature_sources = [s['name'] for s in self.service_attributes.update_config.sources]
+        for signature in signature_sources:
+            for sigma_rule_path in self.rules_list:
+                if signature in sigma_rule_path:
+                    with open(sigma_rule_path) as yaml_fh:
+                        file = yaml_fh.read()
+                        rules = file.split('\n\n\n')
+                        for rule in rules:
+                            rule = rule + f'\nsignature_source: {signature}'
+                            temp_list.append(rule)
+                    break
+        self.rules_list = temp_list
 
         if len(all_sha256s) == 1:
             return all_sha256s[0][:7]
@@ -219,7 +234,7 @@ class Sigma(ServiceBase):
             try:
                 self.sigma_parser.add_signature(rule)
             except Exception as e:
-                self.log.warning(e)
+                self.log.warning(f"{e} | {rule}")
 
     def _cleanup(self) -> None:
         super()._cleanup()
