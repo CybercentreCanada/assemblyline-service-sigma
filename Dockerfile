@@ -17,10 +17,8 @@ RUN apt-get update && apt-get install -y git libssl-dev  && rm -rf /var/lib/apt/
 # Install PIP dependancies
 USER assemblyline
 RUN touch /tmp/before-pip
-COPY requirements.txt requirements.txt
-RUN git clone https://github.com/CybercentreCanada/pysigma.git
-RUN pip install ./pysigma -r pysigma/requirements.txt \
-    --no-cache-dir  --user -r requirements.txt && rm -rf ~/.cache/pip
+RUN pip install git+https://github.com/CybercentreCanada/pysigma.git
+RUN pip install assemblyline-client>=4.0.1 gitpython>=3.1.12
 
 # Install packages for update-server
 RUN pip install gunicorn flask && rm -rf ~/.cache/pip

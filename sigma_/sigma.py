@@ -191,7 +191,6 @@ class Sigma(ServiceBase):
         path = request.file_path
         file_name = request.file_name
         self.log.info(f" Executing {file_name}")
-        self.log.info(f"Number of rules {len(self.sigma_parser.rules)}")
         self.sigma_parser.register_callback(self.sigma_hit)
         self.sigma_parser.check_logfile(path)
         if len(self.hits) > 0:
@@ -230,11 +229,14 @@ class Sigma(ServiceBase):
             raise Exception(f"Something went wrong while trying to load Sigma rules: {str(e)}")
 
         rules = self.rules_list
+        self.log.info(f"Number of rules to be loaded: {len(rules)}")
         for rule in rules:
             try:
                 self.sigma_parser.add_signature(rule)
             except Exception as e:
                 self.log.warning(f"{e} | {rule}")
+
+        self.log.info(f"Number of rules successfully loaded: {len(self.sigma_parser.rules)}")
 
     def _cleanup(self) -> None:
         super()._cleanup()
