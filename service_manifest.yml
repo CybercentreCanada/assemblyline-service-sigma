@@ -66,11 +66,6 @@ dependencies:
 
 update_config:
   generates_signatures: true
-  method: run
-  run_options:
-    allow_internet_access: true
-    command: ["python", "-m", "sigma_.sigma_updater"]
-    image: ${REGISTRY}cccs/assemblyline-service-sigma:$SERVICE_TAG
   sources:
     - name: sigma
       pattern: .*windows\/.*\.yml
