@@ -3,8 +3,6 @@ import os
 import tempfile
 import time
 
-from typing import List, Dict, Any
-from urllib.parse import urlparse
 from yaml.composer import ComposerError
 
 from assemblyline_client import get_client
@@ -56,7 +54,7 @@ class SigmaUpdateServer(ServiceUpdater):
                                                                         classification.UNRESTRICTED)
                 try:
                     if uri.endswith('.git'):
-                        files = git_clone_repo(source, old_update_time, ".*\.yml", self.log, UPDATE_DIR)
+                        files = git_clone_repo(source, old_update_time, "*.yml", self.log, UPDATE_DIR)
                         self.log.info(files)
                         for file, sha256 in files:
                             files_sha256.setdefault(source_name, {})

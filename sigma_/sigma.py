@@ -28,36 +28,6 @@ SCORE_HEUR_MAPPING = {
 }
 
 
-# def get_rules(self) -> Optional[List[str]]:
-#     sigma_rules_path = FILE_UPDATE_DIRECTORY
-#     source = self.service_attributes.update_config.sources
-#     signature_sources = [s['name'] for s in source]
-#     split_rules = []
-
-#     if not os.path.exists(sigma_rules_path):
-#         self.log.error("Sigma rules directory not found")
-#         return None
-#     if sigma_rules_path.startswith('/mount'):
-#         # Running in Container
-#         try:
-#             rules_directory = max([os.path.join(sigma_rules_path, d) for d in os.listdir(sigma_rules_path)
-#                                    if os.path.isdir(os.path.join(sigma_rules_path, d)) and not
-#                                    d.startswith(".tmp")], key=os.path.getctime)
-#         except ValueError:
-#             self.log.error("Sigma rules directory not found")
-#             return None
-#         sigma_rules_path = os.path.join(rules_directory, 'sigma')
-#     for signature in signature_sources:
-#         with open(os.path.join(sigma_rules_path, signature)) as yaml_fh:
-#             file = yaml_fh.read()
-#             rules = file.split('\n\n\n')
-#             for rule in rules:
-#                 rule = rule + f'\nsignature_source: {signature}'
-#                 split_rules.append(rule)
-#     self.log.info(f"Loaded {len(split_rules)} rules")
-#     return split_rules
-
-
 class EventDataSection(ResultSection):
     def __init__(self, event_data: Dict) -> None:
         title = "Event Data"
