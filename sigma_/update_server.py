@@ -15,11 +15,12 @@ from sigma_.sigma_importer import SigmaImporter
 from pysigma.pysigma import val_file
 from pysigma.exceptions import UnsupportedFeature
 
-al_log.init_logging('updater.sigma')
+al_log.init_logging('updater.sigma', log_level=os.environ.get('LOG_LEVEL', "WARNING"))
+LOGGER = logging.getLogger('assemblyline.updater.sigma')
+
 classification = forge.get_classification()
 
 UPDATE_DIR = os.path.join(tempfile.gettempdir(), 'sigma_updates')
-LOGGER = logging.getLogger('assemblyline.updater.sigma')
 
 UI_SERVER = os.getenv('UI_SERVER', 'https://nginx')
 
@@ -78,8 +79,8 @@ class SigmaUpdateServer(ServiceUpdater):
                     continue
 
             if files_sha256:
-                LOGGER.info("Found new Sigma rule files to process!")
-                sigma_importer = SigmaImporter(al_client, logger=LOGGER)
+                self.log.info("Found new Sigma rule files to process!")
+                sigma_importer = SigmaImporter(al_client, logger=self.log)
 
                 for source, source_val in files_sha256.items():
                     total_imported = 0
@@ -89,14 +90,14 @@ class SigmaUpdateServer(ServiceUpdater):
                             total_imported += sigma_importer.import_file(file, source,
                                                                          default_classification=default_classification)
                         except ValueError:
-                            LOGGER.warning(f"{file} failed to import due to a Sigma error")
+                            self.log.warning(f"{file} failed to import due to a Sigma error")
                         except ComposerError:
-                            LOGGER.warning(f"{file} failed to import due to a YAML-parsing error")
+                            self.log.warning(f"{file} failed to import due to a YAML-parsing error")
 
-                    LOGGER.info(f"{total_imported} signatures were imported for source {source}")
+                    self.log.info(f"{total_imported} signatures were imported for source {source}")
 
             else:
-                LOGGER.info('No new Sigma rule files to process')
+                self.log.info('No new Sigma rule files to process')
 
         self.set_source_update_time(run_time)
         self.set_source_extra(files_sha256)
@@ -105,5 +106,5 @@ class SigmaUpdateServer(ServiceUpdater):
 
 
 if __name__ == '__main__':
-    with SigmaUpdateServer() as server:
+    with SigmaUpdateServer(logger=LOGGER) as server:
         server.serve_forever()
