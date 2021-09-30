@@ -7,21 +7,18 @@ USER root
 
 
 # Install APT dependancies
-RUN apt-get update && apt-get install -y git libssl1.1  && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libssl1.1 && rm -rf /var/lib/apt/lists/*
 
 FROM base AS build
 
 # Install APT dependancies
-RUN apt-get update && apt-get install -y git libssl-dev  && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libssl-dev && rm -rf /var/lib/apt/lists/*
 
 # Install PIP dependancies
 USER assemblyline
 RUN touch /tmp/before-pip
 RUN pip install git+https://github.com/CybercentreCanada/pysigma.git
-RUN pip install assemblyline-client gitpython
-
-# Install packages for update-server
-RUN pip install gunicorn flask && rm -rf ~/.cache/pip
+RUN pip install assemblyline-client
 
 USER root
 
