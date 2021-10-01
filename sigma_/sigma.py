@@ -71,7 +71,6 @@ class Sigma(ServiceBase):
                 self.log.warning(f"{e} | {rule}")
 
         self.log.info(f"Number of rules successfully loaded: {len(self.sigma_parser.rules)}")
-        return True
 
     def _get_rules_hash(self):
         self.rules_list = [str(f) for f in Path(self.rules_directory).rglob("*") if os.path.isfile(str(f))]
@@ -79,7 +78,7 @@ class Sigma(ServiceBase):
 
         self.log.info(f"Sigma will load the following rule files: {self.rules_list}")
 
-        # Signature importer doesn't suppose loading rules en masse
+        # Signature importer doesn't support loading rules en masse
         temp_list = []
         signature_sources = [s['name'] for s in self.service_attributes.update_config.sources]
         for signature in signature_sources:
