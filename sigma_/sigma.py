@@ -1,12 +1,7 @@
 import copy
 import hashlib
 import json
-import requests
 import os
-import time
-import tempfile
-import tarfile
-import shutil
 from pathlib import Path
 from typing import Dict
 
@@ -15,10 +10,6 @@ from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Result, ResultSection
 from pysigma.pysigma import PySigma
-
-UPDATES_HOST = os.environ.get('updates_host')
-UPDATES_PORT = os.environ.get('updates_port')
-UPDATES_KEY = os.environ.get('updates_key')
 
 SCORE_HEUR_MAPPING = {
     "critical": 1,
@@ -77,6 +68,16 @@ class Sigma(ServiceBase):
         self.update_time = None
         self.rules_hash = ''
 
+    def _load_rules(self) -> None:
+        self.log.info(f"Number of rules to be loaded: {len(self.rules_list)}")
+        for rule in self.rules_list:
+            try:
+                self.sigma_parser.add_signature(rule)
+            except Exception as e:
+                self.log.warning(f"{e} | {rule}")
+
+        self.log.info(f"Number of rules successfully loaded: {len(self.sigma_parser.rules)}")
+
     def _get_rules_hash(self):
         self.rules_list = [str(f) for f in Path(self.rules_directory).rglob("*") if os.path.isfile(str(f))]
         all_sha256s = [get_sha256_for_file(f) for f in self.rules_list]
@@ -102,48 +103,6 @@ class Sigma(ServiceBase):
             return all_sha256s[0][:7]
 
         return hashlib.sha256(' '.join(sorted(all_sha256s)).encode('utf-8')).hexdigest()[:7]
-
-    def _download_rules(self):
-        url_base = f'http://{UPDATES_HOST}:{UPDATES_PORT}/'
-        headers = {
-            'X_APIKEY': UPDATES_KEY
-        }
-
-        # Check if there are new
-        while True:
-            resp = requests.get(url_base + 'status')
-            resp.raise_for_status()
-            status = resp.json()
-            if self.update_time is not None and self.update_time >= status['local_update_time']:
-                return False
-            if status['download_available']:
-                break
-            self.log.warning('Waiting on update server availability...')
-            time.sleep(10)
-
-        # Download the current update
-        temp_directory = tempfile.mkdtemp()
-        buffer_handle, buffer_name = tempfile.mkstemp()
-        try:
-            with os.fdopen(buffer_handle, 'wb') as buffer:
-                resp = requests.get(url_base + 'tar', headers=headers)
-                resp.raise_for_status()
-                for chunk in resp.iter_content(chunk_size=1024):
-                    buffer.write(chunk)
-
-            tar_handle = tarfile.open(buffer_name)
-            tar_handle.extractall(temp_directory)
-            self.update_time = status['local_update_time']
-            self.rules_directory, temp_directory = temp_directory, self.rules_directory
-            return True
-        finally:
-            os.unlink(buffer_name)
-            if temp_directory is not None:
-                shutil.rmtree(temp_directory, ignore_errors=True)
-
-    def _update_rules(self):
-        if self._download_rules():
-            self.rules_hash = self._get_rules_hash()
 
     def sigma_hit(self, alert: Dict, event: Dict) -> None:
         id = alert['id']
@@ -190,27 +149,3 @@ class Sigma(ServiceBase):
                 hit_section.add_subsection(section)
             result.add_section(hit_section)
         request.result = result
-
-    def start(self):
-        try:
-            # Load the rules
-            self._update_rules()
-        except Exception as e:
-            raise Exception(f"Something went wrong while trying to load Sigma rules: {str(e)}")
-
-        rules = self.rules_list
-        self.log.info(f"Number of rules to be loaded: {len(rules)}")
-        for rule in rules:
-            try:
-                self.sigma_parser.add_signature(rule)
-            except Exception as e:
-                self.log.warning(f"{e} | {rule}")
-
-        self.log.info(f"Number of rules successfully loaded: {len(self.sigma_parser.rules)}")
-
-    def _cleanup(self) -> None:
-        super()._cleanup()
-        try:
-            self._update_rules()
-        except Exception as e:
-            raise Exception(f"Something went wrong while trying to load Sigma rules: {str(e)}")
