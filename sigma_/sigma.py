@@ -62,12 +62,6 @@ class Sigma(ServiceBase):
         self.sigma_parser = PySigma()
         self.hits = {}
 
-        # Updater-related
-        self.rules_directory = None
-        self.rules_list = []
-        self.update_time = None
-        self.rules_hash = ''
-
     def _load_rules(self) -> None:
         self.log.info(f"Number of rules to be loaded: {len(self.rules_list)}")
         for rule in self.rules_list:
@@ -77,6 +71,7 @@ class Sigma(ServiceBase):
                 self.log.warning(f"{e} | {rule}")
 
         self.log.info(f"Number of rules successfully loaded: {len(self.sigma_parser.rules)}")
+        return True
 
     def _get_rules_hash(self):
         self.rules_list = [str(f) for f in Path(self.rules_directory).rglob("*") if os.path.isfile(str(f))]
@@ -149,3 +144,8 @@ class Sigma(ServiceBase):
                 hit_section.add_subsection(section)
             result.add_section(hit_section)
         request.result = result
+
+    def get_service_version(self):
+        basic_version = super().get_service_version()
+        if self.rules_hash:
+            return f'{basic_version}.r{self.rules_hash}'
