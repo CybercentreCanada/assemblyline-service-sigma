@@ -1,11 +1,7 @@
 import copy
-import hashlib
 import json
-import os
-from pathlib import Path
 from typing import Dict
 
-from assemblyline.common.digests import get_sha256_for_file
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Result, ResultSection
@@ -63,21 +59,9 @@ class Sigma(ServiceBase):
         self.hits = {}
 
     def _load_rules(self) -> None:
-        self.log.info(f"Number of rules to be loaded: {len(self.rules_list)}")
-        for rule in self.rules_list:
-            try:
-                self.sigma_parser.add_signature(rule)
-            except Exception as e:
-                self.log.warning(f"{e} | {rule}")
-
-        self.log.info(f"Number of rules successfully loaded: {len(self.sigma_parser.rules)}")
-
-    def _get_rules_hash(self):
-        self.rules_list = [str(f) for f in Path(self.rules_directory).rglob("*") if os.path.isfile(str(f))]
-        all_sha256s = [get_sha256_for_file(f) for f in self.rules_list]
-
         self.log.info(f"Sigma will load the following rule files: {self.rules_list}")
 
+        # Parse from monolithic files to mini files
         # Signature importer doesn't support loading rules en masse
         temp_list = []
         signature_sources = [s['name'] for s in self.service_attributes.update_config.sources]
@@ -91,12 +75,15 @@ class Sigma(ServiceBase):
                             rule = rule + f'\nsignature_source: {signature}'
                             temp_list.append(rule)
                     break
-        self.rules_list = temp_list
 
-        if len(all_sha256s) == 1:
-            return all_sha256s[0][:7]
+        self.log.info(f"Number of rules to be loaded: {len(self.temp_list)}")
+        for rule in self.temp_list:
+            try:
+                self.sigma_parser.add_signature(rule)
+            except Exception as e:
+                self.log.warning(f"{e} | {rule}")
 
-        return hashlib.sha256(' '.join(sorted(all_sha256s)).encode('utf-8')).hexdigest()[:7]
+        self.log.info(f"Number of rules successfully loaded: {len(self.sigma_parser.rules)}")
 
     def sigma_hit(self, alert: Dict, event: Dict) -> None:
         id = alert['id']
