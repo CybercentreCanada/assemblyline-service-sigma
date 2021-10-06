@@ -76,8 +76,8 @@ class Sigma(ServiceBase):
                             temp_list.append(rule)
                     break
 
-        self.log.info(f"Number of rules to be loaded: {len(self.temp_list)}")
-        for rule in self.temp_list:
+        self.log.info(f"Number of rules to be loaded: {len(temp_list)}")
+        for rule in temp_list:
             try:
                 self.sigma_parser.add_signature(rule)
             except Exception as e:
