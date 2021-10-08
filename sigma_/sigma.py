@@ -59,22 +59,14 @@ class Sigma(ServiceBase):
         self.hits = {}
 
     def _load_rules(self) -> None:
-        self.log.info(f"Sigma will load the following rule files: {self.rules_list}")
-
-        # Parse from monolithic files to mini files
-        # Signature importer doesn't support loading rules en masse
         temp_list = []
-        signature_sources = [s['name'] for s in self.service_attributes.update_config.sources]
-        for signature in signature_sources:
-            for sigma_rule_path in self.rules_list:
-                if signature in sigma_rule_path:
-                    with open(sigma_rule_path) as yaml_fh:
-                        file = yaml_fh.read()
-                        rules = file.split('\n\n\n')
-                        for rule in rules:
-                            rule = rule + f'\nsignature_source: {signature}'
-                            temp_list.append(rule)
-                    break
+        # Patch source_name into signature and import
+        for rule in self.rules_list:
+            with open(rule, 'r') as yaml_fh:
+                file = yaml_fh.read()
+                source_name = rule.split('/')[-2]
+                patched_rule = f'{file}\nsignature_source: {source_name}'
+                temp_list.append(patched_rule)
 
         self.log.info(f"Number of rules to be loaded: {len(temp_list)}")
         for rule in temp_list:
@@ -122,7 +114,7 @@ class Sigma(ServiceBase):
                     section.set_heuristic(heur_id, attack_id=attack_id, signature=f"{source}.{title}")
                 else:
                     self.log.warning(f"Unknown score-heuristic mapping for: {events[0]['score']}")
-                section.add_tag(f"file.rule.{source}", f"{source}.{title}")
+                section.add_tag("file.rule.sigma", f"{source}.{title}")
 
                 for event in events:
                     # add the event data as a subsection
@@ -130,8 +122,3 @@ class Sigma(ServiceBase):
                 hit_section.add_subsection(section)
             result.add_section(hit_section)
         request.result = result
-
-    def get_service_version(self):
-        basic_version = super().get_service_version()
-        if self.rules_hash:
-            return f'{basic_version}.r{self.rules_hash}'

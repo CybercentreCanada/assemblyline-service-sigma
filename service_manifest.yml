@@ -71,6 +71,7 @@ update_config:
       pattern: .*windows\/.*\.yml
       uri: https://github.com/SigmaHQ/sigma.git
   update_interval_seconds: 21600 # Quarter-day (every 6 hours)
+  signature_delimiter: "file"
 
 # Docker configuration block which defines:
 #  - the name of the docker container that will be created
