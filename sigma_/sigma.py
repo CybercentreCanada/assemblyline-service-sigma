@@ -1,52 +1,18 @@
 import copy
 import json
-import os
-
-from typing import Dict, List, Optional
+from typing import Dict
 
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
-from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
+from assemblyline_v4_service.common.result import BODY_FORMAT, Result, ResultSection
+from pysigma.pysigma import PySigma
 
-from pysigma import pysigma
-
-FILE_UPDATE_DIRECTORY = os.environ.get('FILE_UPDATE_DIRECTORY', "/tmp/sigma_updater_output/sigma")
 SCORE_HEUR_MAPPING = {
     "critical": 1,
     "high": 2,
     "medium": 3,
     "low": 4
 }
-
-
-def get_rules(self) -> Optional[List[str]]:
-    sigma_rules_path = FILE_UPDATE_DIRECTORY
-    source = self.service_attributes.update_config.sources
-    signature_sources = [s['name'] for s in source]
-    split_rules = []
-
-    if not os.path.exists(sigma_rules_path):
-        self.log.error("Sigma rules directory not found")
-        return None
-    if sigma_rules_path.startswith('/mount'):
-        # Running in Container
-        try:
-            rules_directory = max([os.path.join(sigma_rules_path, d) for d in os.listdir(sigma_rules_path)
-                                   if os.path.isdir(os.path.join(sigma_rules_path, d)) and not
-                                   d.startswith(".tmp")], key=os.path.getctime)
-        except ValueError:
-            self.log.error("Sigma rules directory not found")
-            return None
-        sigma_rules_path = os.path.join(rules_directory, 'sigma')
-    for signature in signature_sources:
-        with open(os.path.join(sigma_rules_path, signature)) as yaml_fh:
-            file = yaml_fh.read()
-            rules = file.split('\n\n\n')
-            for rule in rules:
-                rule = rule + f'\nsignature_source: {signature}'
-                split_rules.append(rule)
-    self.log.info(f"Loaded {len(split_rules)} rules")
-    return split_rules
 
 
 class EventDataSection(ResultSection):
@@ -89,14 +55,27 @@ class SigmaHitSection(ResultSection):
 class Sigma(ServiceBase):
     def __init__(self, config: Dict = None) -> None:
         super(Sigma, self).__init__(config)
-        self.sigma_parser = pysigma.PySigma()
+        self.sigma_parser = PySigma()
         self.hits = {}
-        rules = get_rules(self)
-        for rule in rules:
+
+    def _load_rules(self) -> None:
+        temp_list = []
+        # Patch source_name into signature and import
+        for rule in self.rules_list:
+            with open(rule, 'r') as yaml_fh:
+                file = yaml_fh.read()
+                source_name = rule.split('/')[-2]
+                patched_rule = f'{file}\nsignature_source: {source_name}'
+                temp_list.append(patched_rule)
+
+        self.log.info(f"Number of rules to be loaded: {len(temp_list)}")
+        for rule in temp_list:
             try:
                 self.sigma_parser.add_signature(rule)
             except Exception as e:
-                self.log.warning(e)
+                self.log.warning(f"{e} | {rule}")
+
+        self.log.info(f"Number of rules successfully loaded: {len(self.sigma_parser.rules)}")
 
     def sigma_hit(self, alert: Dict, event: Dict) -> None:
         id = alert['id']
@@ -114,7 +93,6 @@ class Sigma(ServiceBase):
         path = request.file_path
         file_name = request.file_name
         self.log.info(f" Executing {file_name}")
-        self.log.info(f"Number of rules {len(self.sigma_parser.rules)}")
         self.sigma_parser.register_callback(self.sigma_hit)
         self.sigma_parser.check_logfile(path)
         if len(self.hits) > 0:
@@ -136,7 +114,7 @@ class Sigma(ServiceBase):
                     section.set_heuristic(heur_id, attack_id=attack_id, signature=f"{source}.{title}")
                 else:
                     self.log.warning(f"Unknown score-heuristic mapping for: {events[0]['score']}")
-                section.add_tag(f"file.rule.{source}", f"{source}.{title}")
+                section.add_tag("file.rule.sigma", f"{source}.{title}")
 
                 for event in events:
                     # add the event data as a subsection

@@ -1,26 +1,23 @@
 ARG branch=latest
 FROM cccs/assemblyline-v4-service-base:$branch AS base
 
-ENV SERVICE_PATH sigma.Sigma
+ENV SERVICE_PATH sigma_.sigma.Sigma
 
 USER root
 
-
 # Install APT dependancies
-RUN apt-get update && apt-get install -y git libssl1.1  && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libssl1.1 && rm -rf /var/lib/apt/lists/*
 
 FROM base AS build
 
 # Install APT dependancies
-RUN apt-get update && apt-get install -y git libssl-dev  && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libssl-dev && rm -rf /var/lib/apt/lists/*
 
 # Install PIP dependancies
 USER assemblyline
 RUN touch /tmp/before-pip
-COPY requirements.txt requirements.txt
-RUN git clone https://github.com/CybercentreCanada/pysigma.git
-RUN pip install ./pysigma -r pysigma/requirements.txt \
---no-cache-dir  --user -r requirements.txt && rm -rf ~/.cache/pip
+RUN pip install git+https://github.com/CybercentreCanada/pysigma.git
+RUN pip install assemblyline-client
 
 USER root
 
