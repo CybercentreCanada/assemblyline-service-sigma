@@ -25,7 +25,7 @@ class SigmaUpdateServer(ServiceUpdater):
             except ComposerError:
                 self.log.warning(f"{file} failed to import due to a YAML-parsing error")
             except UnsupportedFeature as e:
-                self.log.warning(f'{file} | {e}')
+                pass
 
         self.log.info(f"{total_imported} signatures were imported for source {source}")
 
