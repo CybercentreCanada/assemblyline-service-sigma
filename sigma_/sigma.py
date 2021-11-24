@@ -6,6 +6,7 @@ from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Result, ResultSection
 from pysigma.pysigma import PySigma
+from pkg_resources import get_distribution
 
 SCORE_HEUR_MAPPING = {
     "critical": 1,
@@ -122,3 +123,11 @@ class Sigma(ServiceBase):
                 hit_section.add_subsection(section)
             result.add_section(hit_section)
         request.result = result
+
+    def get_tool_version(self):
+        """
+        Return the version of Pysigma used for processing
+        :return:
+        """
+        version_string = get_distribution("pysigma").version
+        return f'{version_string}.r{self.rules_hash}'
