@@ -110,11 +110,12 @@ class Sigma(ServiceBase):
                         if name.startswith(('t', 'g', 's')):
                             attack_id = name.upper()
                 source = events[0]['signature_source']
-                heur_id = SCORE_HEUR_MAPPING.get(events[0]['score'], None)
+                score = events[0]['score']
+                heur_id = SCORE_HEUR_MAPPING.get(score, None)
                 if heur_id:
                     section.set_heuristic(heur_id, attack_id=attack_id, signature=f"{source}.{title}")
-                else:
-                    self.log.warning(f"Unknown score-heuristic mapping for: {events[0]['score']}")
+                elif score != 'null':
+                    self.log.warning(f"Unknown score-heuristic mapping for: {score}")
                 section.add_tag("file.rule.sigma", f"{source}.{title}")
 
                 for event in events:
