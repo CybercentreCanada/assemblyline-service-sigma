@@ -1,5 +1,6 @@
 import copy
 import json
+import tempfile
 from typing import Dict
 
 from assemblyline_v4_service.common.base import ServiceBase
@@ -49,7 +50,8 @@ class SigmaHitSection(ResultSection):
         super(SigmaHitSection, self).__init__(
             title_text=title,
             body_format=BODY_FORMAT.KEY_VALUE,
-            body=json.dumps(json_body)
+            body=json.dumps(json_body),
+            auto_collapse=True
         )
 
 
@@ -95,7 +97,13 @@ class Sigma(ServiceBase):
         file_name = request.file_name
         self.log.info(f" Executing {file_name}")
         self.sigma_parser.register_callback(self.sigma_hit)
-        self.sigma_parser.check_logfile(path)
+
+        with tempfile.NamedTemporaryFile('w+', delete=False) as event_dump:
+            for line in self.sigma_parser.check_logfile(path):
+                event_dump.write(f"{json.dumps(line)}\n")
+            event_dump.seek(0)
+            request.add_supplementary(event_dump.name, f"{file_name}_event_dump", "Output from Sigma Parser")
+
         if len(self.hits) > 0:
             hit_section = ResultSection('Events detected as suspicious')
             # group alerts together
