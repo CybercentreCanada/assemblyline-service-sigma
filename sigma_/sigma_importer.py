@@ -1,6 +1,7 @@
 import logging
 import os
 import yaml
+from typing import List
 
 from assemblyline.common import forge
 from assemblyline.odm.models.signature import Signature
@@ -22,7 +23,7 @@ class SigmaImporter:
         self.classification = forge.get_classification()
         self.log = logger
 
-    def _save_signatures(self, files: list[str], source: str, default_classification: str = None):
+    def _save_signatures(self, files: List[str], source: str, default_classification: str = None):
         upload_list = []
         order = 1
         order_completed = 0
