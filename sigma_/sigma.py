@@ -1,3 +1,4 @@
+from collections import defaultdict
 import copy
 import json
 import tempfile
@@ -37,7 +38,7 @@ class EventDataSection(ResultSection):
             if k in ('Channel', 'EventID'):
                 json_body[k] = v
         body = {k: v for k, v in json_body.items() if v}
-        tags = {}
+        tags = defaultdict(list)
         commandline_keys = ["CommandLine", "ParentCommandLine"]
         if any(k in body for k in commandline_keys):
             for item in commandline_keys:
@@ -45,8 +46,6 @@ class EventDataSection(ResultSection):
                 if v:
                     uris = set(findall(uri_pattern, v.encode()))
                     if uris:
-                        if not tags:
-                            tags["network.dynamic.uri"] = []
                         tags["network.dynamic.uri"].extend([safe_str(uri) for uri in uris])
         super(EventDataSection, self).__init__(
             title_text=title,
