@@ -1,52 +1,27 @@
 import copy
 import json
-import os
-import re
+import tempfile
+from typing import Dict
 
-from typing import Dict, List, Optional
-
+from assemblyline.common.str_utils import safe_str
 from assemblyline_v4_service.common.base import ServiceBase
+from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.request import ServiceRequest
-from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
-from assemblyline.odm.base import DOMAIN_REGEX, IP_REGEX, FULL_URI
-URL_REGEX = re.compile(FULL_URI.lstrip("^").rstrip("$"))
-from pysigma import pysigma
+from assemblyline_v4_service.common.result import BODY_FORMAT, Result, ResultSection
+from pysigma.pysigma import PySigma
+from pkg_resources import get_distribution
+from re import findall
 
-FILE_UPDATE_DIRECTORY = os.environ.get('FILE_UPDATE_DIRECTORY', "/tmp/sigma_updater_output/sigma")
-
-
-def get_rules(self) -> Optional[List[str]]:
-    sigma_rules_path = FILE_UPDATE_DIRECTORY
-    source = self.service_attributes.update_config.sources
-    signature_sources = [s['name'] for s in source]
-    split_rules = []
-
-    if not os.path.exists(sigma_rules_path):
-        self.log.error("Sigma rules directory not found")
-        return None
-    if sigma_rules_path.startswith('/mount'):
-        # Running in Container
-        try:
-            rules_directory = max([os.path.join(sigma_rules_path, d) for d in os.listdir(sigma_rules_path)
-                                   if os.path.isdir(os.path.join(sigma_rules_path, d)) and not
-                                   d.startswith(".tmp")], key=os.path.getctime)
-        except ValueError:
-            self.log.error("Sigma rules directory not found")
-            return None
-        sigma_rules_path = os.path.join(rules_directory, 'sigma')
-    for signature in signature_sources:
-        with open(os.path.join(sigma_rules_path, signature)) as yaml_fh:
-            file = yaml_fh.read()
-            rules = file.split('\n\n\n')
-            for rule in rules:
-                rule = rule + f'\nsignature_source: {signature}'
-                split_rules.append(rule)
-    self.log.info(f"Loaded {len(split_rules)} rules")
-    return split_rules
+SCORE_HEUR_MAPPING = {
+    "critical": 1,
+    "high": 2,
+    "medium": 3,
+    "low": 4
+}
 
 
 class EventDataSection(ResultSection):
-    def __init__(self, event_data: Dict) -> None:
+    def __init__(self, event_data: Dict, uri_pattern: bytes) -> None:
         title = "Event Data"
         json_body = {}
         if 'Event' in event_data:
@@ -61,20 +36,23 @@ class EventDataSection(ResultSection):
         for k, v in system_fields.items():
             if k in ('Channel', 'EventID'):
                 json_body[k] = v
-        if 'CommandLine' in json_body:
-            text = json_body['CommandLine']
-            match = re.search(URL_REGEX, text)
-            if match:
-                uris = set(re.findall(URL_REGEX, text))
-                for uri in uris:
-                    self.add_tag("network.static.uri", uri)
-                    #TODO add tags correctly to section
-
         body = {k: v for k, v in json_body.items() if v}
+        tags = {}
+        commandline_keys = ["CommandLine", "ParentCommandLine"]
+        if any(k in body for k in commandline_keys):
+            for item in commandline_keys:
+                v = body.get(item)
+                if v:
+                    uris = set(findall(uri_pattern, v.encode()))
+                    if uris:
+                        if not tags:
+                            tags["network.dynamic.uri"] = []
+                        tags["network.dynamic.uri"].extend([safe_str(uri) for uri in uris])
         super(EventDataSection, self).__init__(
             title_text=title,
             body_format=BODY_FORMAT.KEY_VALUE,
-            body=json.dumps(body)
+            body=json.dumps(body),
+            tags=tags
         )
 
 
@@ -87,34 +65,36 @@ class SigmaHitSection(ResultSection):
         super(SigmaHitSection, self).__init__(
             title_text=title,
             body_format=BODY_FORMAT.KEY_VALUE,
-            body=json.dumps(json_body)
+            body=json.dumps(json_body),
+            auto_collapse=True
         )
-
-
-def get_heur_id(level: str) -> int:
-    if level == "critical":
-        return 1
-    elif level == "high":
-        return 2
-    elif level == "medium":
-        return 3
-    elif level == "low":
-        return 4
-    else:
-        return 0
 
 
 class Sigma(ServiceBase):
     def __init__(self, config: Dict = None) -> None:
         super(Sigma, self).__init__(config)
-        self.sigma_parser = pysigma.PySigma()
+        self.sigma_parser = PySigma()
         self.hits = {}
-        rules = get_rules(self)
-        for rule in rules:
+        self.patterns = PatternMatch()
+
+    def _load_rules(self) -> None:
+        temp_list = []
+        # Patch source_name into signature and import
+        for rule in self.rules_list:
+            with open(rule, 'r') as yaml_fh:
+                file = yaml_fh.read()
+                source_name = rule.split('/')[-2]
+                patched_rule = f'{file}\nsignature_source: {source_name}'
+                temp_list.append(patched_rule)
+
+        self.log.info(f"Number of rules to be loaded: {len(temp_list)}")
+        for rule in temp_list:
             try:
                 self.sigma_parser.add_signature(rule)
             except Exception as e:
-                self.log.warning(e)
+                self.log.warning(f"{e} | {rule}")
+
+        self.log.info(f"Number of rules successfully loaded: {len(self.sigma_parser.rules)}")
 
     def sigma_hit(self, alert: Dict, event: Dict) -> None:
         id = alert['id']
@@ -132,9 +112,14 @@ class Sigma(ServiceBase):
         path = request.file_path
         file_name = request.file_name
         self.log.info(f" Executing {file_name}")
-        self.log.info(f"Number of rules {len(self.sigma_parser.rules)}")
         self.sigma_parser.register_callback(self.sigma_hit)
-        self.sigma_parser.check_logfile(path)
+
+        with tempfile.NamedTemporaryFile('w+', delete=False) as event_dump:
+            for line in self.sigma_parser.check_logfile(path):
+                event_dump.write(f"{json.dumps(line)}\n")
+            event_dump.seek(0)
+            request.add_supplementary(event_dump.name, f"{file_name}_event_dump", "Output from Sigma Parser")
+
         if len(self.hits) > 0:
             hit_section = ResultSection('Events detected as suspicious')
             # group alerts together
@@ -142,23 +127,31 @@ class Sigma(ServiceBase):
                 title = self.sigma_parser.rules[id].title
                 section = SigmaHitSection(title, events)
                 tags = self.sigma_parser.rules[id].tags
-                attack_id = ""
+                attack_id = None
                 if tags:
                     for tag in tags:
                         name = tag[7:]
                         if name.startswith(('t', 'g', 's')):
                             attack_id = name.upper()
                 source = events[0]['signature_source']
-                if attack_id:
-                    section.set_heuristic(get_heur_id(events[0]['score']), attack_id=attack_id,
-                                          signature=f"{source}.{title}")
-                    section.add_tag(f"file.rule.{source}", f"{source}.{title}")
+                heur_id = SCORE_HEUR_MAPPING.get(events[0]['score'], None)
+                if heur_id:
+                    section.set_heuristic(heur_id, attack_id=attack_id, signature=f"{source}.{title}")
                 else:
-                    section.set_heuristic(get_heur_id(events[0]['score']), signature=f"{source}.{title}")
-                    section.add_tag(f"file.rule.{source}", f"{source}.{title}")
+                    self.log.warning(f"Unknown score-heuristic mapping for: {events[0]['score']}")
+                section.add_tag("file.rule.sigma", f"{source}.{title}")
+
                 for event in events:
                     # add the event data as a subsection
-                    section.add_subsection(EventDataSection(event))
+                    section.add_subsection(EventDataSection(event, self.patterns.PAT_URI_NO_PROTOCOL))
                 hit_section.add_subsection(section)
             result.add_section(hit_section)
         request.result = result
+
+    def get_tool_version(self):
+        """
+        Return the version of Pysigma used for processing
+        :return:
+        """
+        version_string = get_distribution("pysigma").version
+        return f'{version_string}.r{self.rules_hash}'
