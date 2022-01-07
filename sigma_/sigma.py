@@ -3,11 +3,14 @@ import json
 import tempfile
 from typing import Dict
 
+from assemblyline.common.str_utils import safe_str
 from assemblyline_v4_service.common.base import ServiceBase
+from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Result, ResultSection
 from pysigma.pysigma import PySigma
 from pkg_resources import get_distribution
+from re import findall
 
 SCORE_HEUR_MAPPING = {
     "critical": 1,
@@ -18,7 +21,7 @@ SCORE_HEUR_MAPPING = {
 
 
 class EventDataSection(ResultSection):
-    def __init__(self, event_data: Dict) -> None:
+    def __init__(self, event_data: Dict, uri_pattern: bytes) -> None:
         title = "Event Data"
         json_body = {}
         if 'Event' in event_data:
@@ -34,10 +37,22 @@ class EventDataSection(ResultSection):
             if k in ('Channel', 'EventID'):
                 json_body[k] = v
         body = {k: v for k, v in json_body.items() if v}
+        tags = {}
+        commandline_keys = ["CommandLine", "ParentCommandLine"]
+        if any(k in body for k in commandline_keys):
+            for item in commandline_keys:
+                v = body.get(item)
+                if v:
+                    uris = set(findall(uri_pattern, v.encode()))
+                    if uris:
+                        if not tags:
+                            tags["network.dynamic.uri"] = []
+                        tags["network.dynamic.uri"].extend([safe_str(uri) for uri in uris])
         super(EventDataSection, self).__init__(
             title_text=title,
             body_format=BODY_FORMAT.KEY_VALUE,
-            body=json.dumps(body)
+            body=json.dumps(body),
+            tags=tags
         )
 
 
@@ -60,6 +75,7 @@ class Sigma(ServiceBase):
         super(Sigma, self).__init__(config)
         self.sigma_parser = PySigma()
         self.hits = {}
+        self.patterns = PatternMatch()
 
     def _load_rules(self) -> None:
         temp_list = []
@@ -127,7 +143,7 @@ class Sigma(ServiceBase):
 
                 for event in events:
                     # add the event data as a subsection
-                    section.add_subsection(EventDataSection(event))
+                    section.add_subsection(EventDataSection(event, self.patterns.PAT_URI_NO_PROTOCOL))
                 hit_section.add_subsection(section)
             result.add_section(hit_section)
         request.result = result
