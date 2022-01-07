@@ -28,6 +28,7 @@ jobs:
           sudo rm -rf /var/lib/apt/lists/*
           sudo env "PATH=$PATH" python -m pip install -U --no-cache-dir assemblyline assemblyline_v4_service
           sudo env "PATH=$PATH" python -m pip install -U --no-cache-dir -r `pwd`/test/requirements.txt
+          sudo env "PATH=$PATH" python -m pip install -U --no-cache-dir git+https://github.com/CybercentreCanada/pysigma.git
           sudo rm -rf /tmp/* /var/lib/apt/lists/* ~/.cache/pip
         displayName: Setup environment
       - script: python -m pytest --durations=10 -rsx -vv --cov-report=xml --cov=sigma
