@@ -17,7 +17,8 @@ SCORE_HEUR_MAPPING = {
     "critical": 1,
     "high": 2,
     "medium": 3,
-    "low": 4
+    "low": 4,
+    None: 5
 }
 
 
@@ -136,8 +137,6 @@ class Sigma(ServiceBase):
                 heur_id = SCORE_HEUR_MAPPING.get(events[0]['score'], None)
                 if heur_id:
                     section.set_heuristic(heur_id, attack_id=attack_id, signature=f"{source}.{title}")
-                else:
-                    self.log.warning(f"Unknown score-heuristic mapping for: {events[0]['score']}")
                 section.add_tag("file.rule.sigma", f"{source}.{title}")
 
                 for event in events:
