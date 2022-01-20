@@ -18,6 +18,7 @@ SCORE_HEUR_MAPPING = {
     "high": 2,
     "medium": 3,
     "low": 4,
+    "null": 5,
     None: 5
 }
 
@@ -134,9 +135,12 @@ class Sigma(ServiceBase):
                         if name.startswith(('t', 'g', 's')):
                             attack_id = name.upper()
                 source = events[0]['signature_source']
-                heur_id = SCORE_HEUR_MAPPING.get(events[0]['score'], None)
+                score = events[0].get('score', None)
+                heur_id = SCORE_HEUR_MAPPING.get(score, None)
                 if heur_id:
                     section.set_heuristic(heur_id, attack_id=attack_id, signature=f"{source}.{title}")
+                else:
+                    self.log.warning(f"Sigma rule {source}.{title} has an invalid threat level: {score}")
                 section.add_tag("file.rule.sigma", f"{source}.{title}")
 
                 for event in events:
