@@ -55,7 +55,7 @@ heuristics:
     filetype: "*"
     description: Sigma hit
   - heur_id: 5
-    name: Sigma Informational hit
+    name: Sigma Info
     score: 0
     filetype: "*"
     description: Sigma hit which has no threat level
