@@ -97,23 +97,12 @@ class Sigma(ServiceBase):
 
         self.log.info(f"Number of rules successfully loaded: {len(self.sigma_parser.rules)}")
 
-    def sigma_hit(self, alert: Dict, event: Dict) -> None:
-        id = alert['id']
-        copied_event = copy.deepcopy(event)
-        if id not in self.hits:
-            copied_event['score'] = alert['score']
-            copied_event['signature_source'] = alert['signature_source']
-            self.hits[id] = [copied_event]
-        else:
-            self.hits[id].append(copied_event)
-
     def execute(self, request: ServiceRequest) -> None:
         result = Result()
         self.hits = {}  # clear the hits dict
         path = request.file_path
         file_name = request.file_name
         self.log.info(f" Executing {file_name}")
-        self.sigma_parser.register_callback(self.sigma_hit)
 
         with tempfile.NamedTemporaryFile('w+', delete=False) as event_dump:
             for line in self.sigma_parser.check_logfile(path):
