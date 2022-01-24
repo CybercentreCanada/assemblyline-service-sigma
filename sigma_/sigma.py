@@ -75,7 +75,7 @@ class Sigma(ServiceBase):
     def __init__(self, config: Dict = None) -> None:
         super(Sigma, self).__init__(config)
         self.sigma_parser = PySigma()
-        self.hits = {}
+        self.sigma_parser.hits = {}
         self.patterns = PatternMatch()
 
     def _load_rules(self) -> None:
@@ -99,7 +99,7 @@ class Sigma(ServiceBase):
 
     def execute(self, request: ServiceRequest) -> None:
         result = Result()
-        self.hits = {}  # clear the hits dict
+        self.sigma_parser.hits = {}  # clear the hits dict
         path = request.file_path
         file_name = request.file_name
         self.log.info(f" Executing {file_name}")
@@ -110,10 +110,10 @@ class Sigma(ServiceBase):
             event_dump.seek(0)
             request.add_supplementary(event_dump.name, f"{file_name}_event_dump", "Output from Sigma Parser")
 
-        if len(self.hits) > 0:
+        if len(self.sigma_parser.hits) > 0:
             hit_section = ResultSection('Events detected as suspicious')
             # group alerts together
-            for id, events in self.hits.items():
+            for id, events in self.sigma_parser.hits.items():
                 title = self.sigma_parser.rules[id].title
                 section = SigmaHitSection(title, events)
                 tags = self.sigma_parser.rules[id].tags
