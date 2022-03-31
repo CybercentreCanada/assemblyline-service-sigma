@@ -77,6 +77,7 @@ update_config:
       uri: https://github.com/SigmaHQ/sigma.git
   update_interval_seconds: 21600 # Quarter-day (every 6 hours)
   signature_delimiter: "file"
+  wait_for_update: true
 
 # Docker configuration block which defines:
 #  - the name of the docker container that will be created
