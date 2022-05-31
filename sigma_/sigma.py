@@ -8,7 +8,6 @@ from assemblyline.common.str_utils import safe_str
 from assemblyline.common.attack_map import attack_map
 from assemblyline.odm.models.ontology.results import Process, Signature
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.ontology_helper import OntologyHelper
 from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Result, ResultSection
@@ -90,11 +89,9 @@ def get_process_ontology(event_body: Dict):
 
 
 class EventDataSection(ResultSection):
-    def __init__(self, event_data: Dict, uri_pattern: bytes, ontology_helper: OntologyHelper) -> None:
+    def __init__(self, event_data: Dict, uri_pattern: bytes) -> None:
         title = "Event Data"
         system_fields, json_body = extract_from_events(event_data)
-        if 'CallTrace' not in json_body.keys():
-            ontology_helper.add_result_part(Process, data=get_process_ontology(json_body))
         for k, v in system_fields.items():
             if k in ('Channel', 'EventID'):
                 json_body[k] = v
@@ -212,7 +209,7 @@ class Sigma(ServiceBase):
                         attributes_record.append(attr_key)
 
                     # add the event data as a subsection
-                    section.add_subsection(EventDataSection(event, self.patterns.PAT_URI_NO_PROTOCOL, self.ontology))
+                    section.add_subsection(EventDataSection(event, self.patterns.PAT_URI_NO_PROTOCOL))
                 hit_section.add_subsection(section)
                 s_ont = dict(name=sig, type='SIGMA', attributes=attributes)
                 if attack_id and attack_map.get('attack_id'):
