@@ -193,12 +193,24 @@ class Sigma(ServiceBase):
                 section.add_tag("file.rule.sigma", sig)
 
                 attributes = []
+                attributes_record = []
                 for event in events:
+                    sys, json_body = extract_from_events(event)
+                    attribute = None
+                    attr_key = None
                     if 'CallTrace' in str(event):
-                        sys, json_body = extract_from_events(event)
                         s_proc, t_proc = get_signature_processes(json_body)
-                        attributes.append(dict(event_id=sys.get('EventID'),
-                                               source_process=s_proc, target_process=t_proc))
+                        attr_key = f"{s_proc['oid']}:{t_proc['oid']}"
+                        attribute = dict(event_id=sys.get('EventID'), source_process=s_proc, target_process=t_proc)
+                    else:
+                        proc = get_process_ontology(json_body)
+                        attr_key = proc['oid']
+                        attribute = dict(event_id=sys.get('EventID'),
+                                         source_process=get_process_ontology(json_body))
+                    if attr_key and attr_key not in attributes_record:
+                        attributes.append(attribute)
+                        attributes_record.append(attr_key)
+
                     # add the event data as a subsection
                     section.add_subsection(EventDataSection(event, self.patterns.PAT_URI_NO_PROTOCOL, self.ontology))
                 hit_section.add_subsection(section)
