@@ -11,6 +11,7 @@ from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Result, ResultSection
+from assemblyline_v4_service.common.dynamic_service_helper import Process as DynamicProcess
 from pysigma.pysigma import PySigma
 from pkg_resources import get_distribution
 from re import findall
@@ -42,6 +43,9 @@ def get_signature_processes(event_body: Dict):
     source = {
         'objectid': {
             'guid': event_body.get('SourceProcessGUID'),
+            'tag': DynamicProcess._normalize_path(event_body.get('SourceImage')),
+            'time_observed': event_body.get('UtcTime')
+
         },
         'pid': event_body.get('SourceProcessId'),
         'image': event_body.get('SourceImage'),
@@ -51,6 +55,8 @@ def get_signature_processes(event_body: Dict):
     target = {
         'objectid': {
             'guid': event_body.get('TargetProcessGUID'),
+            'tag': DynamicProcess._normalize_path(event_body.get('TargetImage')),
+            'time_observed': event_body.get('UtcTime')
         },
         'pid': event_body.get('TargetProcessId'),
         'image': event_body.get('TargetImage'),
@@ -67,6 +73,8 @@ def get_process_ontology(event_body: Dict):
     data = {
         'objectid': {
             'guid': event_body.get('ProcessGuid'),
+            'tag': DynamicProcess._normalize_path(event_body.get('Image')),
+            'time_observed': event_body.get('UtcTime')
         },
         'pimage': event_body.get('ParentImage'),
         'pcommand_line': event_body.get('ParentCommandLine'),
