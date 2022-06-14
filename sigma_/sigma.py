@@ -63,8 +63,8 @@ def get_signature_processes(event_body: Dict):
         'start_time': event_body.get('UtcTime'),
     }
 
-    source['oid'] = Process.get_oid(source)
-    target['oid'] = Process.get_oid(target)
+    source['objectid']['ontology_id'] = Process.get_oid(source)
+    target['objectid']['ontology_id'] = Process.get_oid(target)
 
     return source, target
 
@@ -91,7 +91,7 @@ def get_process_ontology(event_body: Dict):
         # Nice to have but not need to have
         data['pobjectid'] = {'guid': event_body['ParentProcessGuid']}
 
-    data['oid'] = Process.get_oid(data)
+    data['objectid']['ontology_id'] = Process.get_oid(data)
 
     return data
 
@@ -205,11 +205,11 @@ class Sigma(ServiceBase):
                     attr_key = None
                     if 'CallTrace' in str(event):
                         s_proc, t_proc = get_signature_processes(json_body)
-                        attr_key = f"{s_proc['oid']}:{t_proc['oid']}"
+                        attr_key = f"{s_proc['objectid']['ontology_id']}:{t_proc['objectid']['ontology_id']}"
                         attribute = dict(event_id=sys.get('EventID'), source_process=s_proc, target_process=t_proc)
                     else:
                         proc = get_process_ontology(json_body)
-                        attr_key = proc['oid']
+                        attr_key = proc['objectid']['ontology_id']
                         attribute = dict(event_id=sys.get('EventID'),
                                          source_process=get_process_ontology(json_body))
                     if attr_key and attr_key not in attributes_record:
