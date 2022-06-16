@@ -206,12 +206,12 @@ class Sigma(ServiceBase):
                     if 'CallTrace' in str(event):
                         s_proc, t_proc = get_signature_processes(json_body)
                         attr_key = f"{s_proc['objectid']['ontology_id']}:{t_proc['objectid']['ontology_id']}"
-                        attribute = dict(event_id=sys.get('EventID'), source_process=s_proc, target_process=t_proc)
+                        attribute = dict(event_record_id=sys.get('EventRecordID'), source=s_proc['objectid'], target=t_proc['objectid'])
                     else:
                         proc = get_process_ontology(json_body)
                         attr_key = proc['objectid']['ontology_id']
-                        attribute = dict(event_id=sys.get('EventID'),
-                                         source_process=get_process_ontology(json_body))
+                        attribute = dict(event_record_id=sys.get('EventRecordID'),
+                                         source=get_process_ontology(json_body)['objectid'])
                     if attr_key and attr_key not in attributes_record:
                         attributes.append(attribute)
                         attributes_record.append(attr_key)
