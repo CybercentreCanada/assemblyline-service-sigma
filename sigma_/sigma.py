@@ -13,6 +13,7 @@ from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Result, ResultSection
 from assemblyline_v4_service.common.dynamic_service_helper import Process as DynamicProcess
 from pysigma.pysigma import PySigma
+from pysigma.parser import get_category
 from pkg_resources import get_distribution
 from re import findall
 
@@ -206,7 +207,11 @@ class Sigma(ServiceBase):
                     if 'CallTrace' in str(event):
                         s_proc, t_proc = get_signature_processes(json_body)
                         attr_key = f"{s_proc['objectid']['ontology_id']}:{t_proc['objectid']['ontology_id']}"
-                        attribute = dict(event_record_id=sys.get('EventRecordID'), source=s_proc['objectid'], target=t_proc['objectid'])
+                        attribute = dict(
+                            event_record_id=sys.get('EventRecordID'),
+                            source=s_proc['objectid'],
+                            target=t_proc['objectid'],
+                            action=get_category(sys))
                     else:
                         proc = get_process_ontology(json_body)
                         attr_key = proc['objectid']['ontology_id']
