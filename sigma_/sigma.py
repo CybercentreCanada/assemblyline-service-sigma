@@ -1,7 +1,6 @@
 from collections import defaultdict
 import json
 import tempfile
-import os
 from typing import Dict
 
 from assemblyline.common.str_utils import safe_str
@@ -44,7 +43,7 @@ def get_signature_processes(event_body: Dict):
     source = {
         'objectid': {
             'guid': event_body.get('SourceProcessGUID'),
-            'tag': os.path.basename(event_body.get('SourceImage')),
+            'tag': event_body['SourceImage'].split('\\')[-1],
             'time_observed': event_body.get('UtcTime')
 
         },
@@ -56,7 +55,7 @@ def get_signature_processes(event_body: Dict):
     target = {
         'objectid': {
             'guid': event_body.get('TargetProcessGUID'),
-            'tag': os.path.basename(event_body.get('TargetImage')),
+            'tag': event_body['TargetImage'].split('\\')[-1],
             'time_observed': event_body.get('UtcTime')
         },
         'pid': event_body.get('TargetProcessId'),
@@ -74,7 +73,7 @@ def get_process_ontology(event_body: Dict):
     data = {
         'objectid': {
             'guid': event_body.get('ProcessGuid'),
-            'tag': os.path.basename(event_body.get('Image')),
+            'tag': event_body['Image'].split('\\')[-1],
             'time_observed': event_body.get('UtcTime')
         },
         'pimage': event_body.get('ParentImage'),
