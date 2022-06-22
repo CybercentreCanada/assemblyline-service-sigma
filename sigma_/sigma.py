@@ -1,15 +1,18 @@
 from collections import defaultdict
-import copy
 import json
 import tempfile
 from typing import Dict
 
 from assemblyline.common.str_utils import safe_str
+from assemblyline.common.attack_map import attack_map
+from assemblyline.odm.models.ontology.results import Process, Signature
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Result, ResultSection
+# from assemblyline_v4_service.common.dynamic_service_helper import Process as DynamicProcess - Pending changes for tags
 from pysigma.pysigma import PySigma
+from pysigma.parser import get_category
 from pkg_resources import get_distribution
 from re import findall
 
@@ -23,19 +26,80 @@ SCORE_HEUR_MAPPING = {
 }
 
 
+def extract_from_events(event_json: Dict):
+    system_data, event_data = None, None
+    if 'Event' in event_json:
+        # evtx log structured slightly different
+        system_data = event_json['Event']['System']
+        event_data = event_json['Event']['EventData']
+    else:
+        system_data = event_json['System']
+        for ordered_dict in event_json['EventData']['Data']:
+            event_data[ordered_dict['@Name']] = ordered_dict.get('#text', None)
+    return system_data, event_data
+
+
+def get_signature_processes(event_body: Dict):
+    source = {
+        'objectid': {
+            'guid': event_body.get('SourceProcessGUID'),
+            'tag': event_body['SourceImage'].split('\\')[-1],
+            'time_observed': event_body.get('UtcTime')
+
+        },
+        'pid': event_body.get('SourceProcessId'),
+        'image': event_body.get('SourceImage'),
+        'start_time': event_body.get('UtcTime'),
+    }
+
+    target = {
+        'objectid': {
+            'guid': event_body.get('TargetProcessGUID'),
+            'tag': event_body['TargetImage'].split('\\')[-1],
+            'time_observed': event_body.get('UtcTime')
+        },
+        'pid': event_body.get('TargetProcessId'),
+        'image': event_body.get('TargetImage'),
+        'start_time': event_body.get('UtcTime'),
+    }
+
+    source['objectid']['ontology_id'] = Process.get_oid(source)
+    target['objectid']['ontology_id'] = Process.get_oid(target)
+
+    return source, target
+
+
+def get_process_ontology(event_body: Dict):
+    data = {
+        'objectid': {
+            'guid': event_body.get('ProcessGuid'),
+            'tag': event_body['Image'].split('\\')[-1],
+            'time_observed': event_body.get('UtcTime')
+        },
+        'pimage': event_body.get('ParentImage'),
+        'pcommand_line': event_body.get('ParentCommandLine'),
+        'ppid': event_body.get('ParentProcessId'),
+        'pid': event_body.get('ProcessId'),
+        'image': event_body.get('Image'),
+        'command_line': event_body.get('CommandLine'),
+        'start_time': event_body.get('UtcTime'),
+        'integrity_level': event_body.get('IntegrityLevel'),
+        'original_file_name': event_body.get('OriginalFileName'),
+    }
+
+    if event_body.get('ParentProcessGuid'):
+        # Nice to have but not need to have
+        data['pobjectid'] = {'guid': event_body['ParentProcessGuid']}
+
+    data['objectid']['ontology_id'] = Process.get_oid(data)
+
+    return data
+
+
 class EventDataSection(ResultSection):
     def __init__(self, event_data: Dict, uri_pattern: bytes) -> None:
         title = "Event Data"
-        json_body = {}
-        if 'Event' in event_data:
-            # evtx log structured slightly different
-            system_fields = event_data['Event']['System']
-            json_body = event_data['Event']['EventData']
-        else:
-            system_fields = event_data['System']
-            for ordered_dict in event_data['EventData']['Data']:
-                json_body[ordered_dict['@Name']] = ordered_dict.get('#text', None)
-
+        system_fields, json_body = extract_from_events(event_data)
         for k, v in system_fields.items():
             if k in ('Channel', 'EventID'):
                 json_body[k] = v
@@ -125,17 +189,47 @@ class Sigma(ServiceBase):
                             attack_id = name.upper()
                 source = events[0]['signature_source']
                 score = events[0].get('score', None)
+                sig = f"{source}.{title}"
                 heur_id = SCORE_HEUR_MAPPING.get(score, None)
                 if heur_id:
-                    section.set_heuristic(heur_id, attack_id=attack_id, signature=f"{source}.{title}")
+                    section.set_heuristic(heur_id, attack_id=attack_id, signature=sig)
                 else:
-                    self.log.warning(f"Sigma rule {source}.{title} has an invalid threat level: {score}")
-                section.add_tag("file.rule.sigma", f"{source}.{title}")
+                    self.log.warning(f"Sigma rule {sig} has an invalid threat level: {score}")
+                section.add_tag("file.rule.sigma", sig)
 
+                attributes = []
+                attributes_record = []
                 for event in events:
+                    sys, json_body = extract_from_events(event)
+                    attribute = None
+                    attr_key = None
+                    if 'CallTrace' in str(event):
+                        s_proc, t_proc = get_signature_processes(json_body)
+                        attr_key = f"{s_proc['objectid']['ontology_id']}:{t_proc['objectid']['ontology_id']}"
+                        attribute = dict(
+                            event_record_id=sys.get('EventRecordID'),
+                            source=s_proc['objectid'],
+                            target=t_proc['objectid'],
+                            action=get_category(sys))
+                    else:
+                        proc = get_process_ontology(json_body)
+                        attr_key = proc['objectid']['ontology_id']
+                        attribute = dict(event_record_id=sys.get('EventRecordID'),
+                                         source=get_process_ontology(json_body)['objectid'])
+                    if attr_key and attr_key not in attributes_record:
+                        attributes.append(attribute)
+                        attributes_record.append(attr_key)
+
                     # add the event data as a subsection
                     section.add_subsection(EventDataSection(event, self.patterns.PAT_URI_NO_PROTOCOL))
                 hit_section.add_subsection(section)
+                s_ont = dict(name=sig, type='SIGMA', attributes=attributes)
+                if attack_id and attack_map.get('attack_id'):
+                    attack = attack_map[attack_id]
+                    s_ont['attacks'] = [
+                        {'attack_id': attack_id, 'pattern': attack['name'],
+                         'categories': attack['categories']}]
+                self.ontology.add_result_part(Signature, data=s_ont)
             result.add_section(hit_section)
         request.result = result
 
