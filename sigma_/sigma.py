@@ -87,10 +87,6 @@ def get_process_ontology(event_body: Dict):
         'original_file_name': event_body.get('OriginalFileName'),
     }
 
-    if event_body.get('ParentProcessGuid'):
-        # Nice to have but not need to have
-        data['pobjectid'] = {'guid': event_body['ParentProcessGuid']}
-
     data['objectid']['ontology_id'] = Process.get_oid(data)
 
     return data
