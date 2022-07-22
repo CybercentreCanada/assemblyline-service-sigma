@@ -207,7 +207,7 @@ class Sigma(ServiceBase):
                             source=s_proc['objectid'],
                             target=t_proc['objectid'],
                             action=get_category(sys))
-                    elif json_body.get('ProcessGuid'):
+                    elif json_body and json_body.get('ProcessGuid'):
                         proc = get_process_ontology(json_body)
                         attr_key = proc['objectid']['ontology_id']
                         attribute = dict(event_record_id=sys.get('EventRecordID'),
