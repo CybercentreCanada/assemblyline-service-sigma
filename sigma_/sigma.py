@@ -96,6 +96,7 @@ class EventDataSection(ResultSection):
     def __init__(self, event_data: Dict, uri_pattern: bytes) -> None:
         title = "Event Data"
         system_fields, json_body = extract_from_events(event_data)
+        json_body = json_body or dict()
         for k, v in system_fields.items():
             if k in ('Channel', 'EventID'):
                 json_body[k] = v
