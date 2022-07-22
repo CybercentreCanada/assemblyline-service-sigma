@@ -207,11 +207,11 @@ class Sigma(ServiceBase):
                             source=s_proc['objectid'],
                             target=t_proc['objectid'],
                             action=get_category(sys))
-                    else:
+                    elif json_body and json_body.get('ProcessGuid'):
                         proc = get_process_ontology(json_body)
                         attr_key = proc['objectid']['ontology_id']
                         attribute = dict(event_record_id=sys.get('EventRecordID'),
-                                         source=get_process_ontology(json_body)['objectid'])
+                                         source=proc['objectid'])
                     if attr_key and attr_key not in attributes_record:
                         attributes.append(attribute)
                         attributes_record.append(attr_key)
