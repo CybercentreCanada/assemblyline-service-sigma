@@ -34,6 +34,7 @@ def extract_from_events(event_json: Dict):
         event_data = event_json['Event']['EventData']
     else:
         system_data = event_json['System']
+        event_data = dict()
         for ordered_dict in event_json['EventData']['Data']:
             event_data[ordered_dict['@Name']] = ordered_dict.get('#text', None)
     return system_data, event_data
