@@ -110,7 +110,7 @@ class EventDataSection(ResultSection):
                 if v:
                     uris = set(findall(uri_pattern, v.encode()))
                     if uris:
-                        tags["network.dynamic.uri"].extend([safe_str(uri) for uri in uris])
+                        tags["network.dynamic.uri"].extend([safe_str(uri).strip(",'") for uri in uris])
         super(EventDataSection, self).__init__(
             title_text=title,
             body_format=BODY_FORMAT.KEY_VALUE,
