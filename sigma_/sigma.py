@@ -31,7 +31,7 @@ def extract_from_events(event_json: Dict):
     if 'Event' in event_json:
         # evtx log structured slightly different
         system_data = event_json['Event']['System']
-        event_data = event_json['Event']['EventData']
+        event_data = event_json['Event'].get('EventData', {})
     else:
         system_data = event_json['System']
         event_data = dict()
