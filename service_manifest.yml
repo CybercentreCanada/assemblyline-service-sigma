@@ -67,13 +67,16 @@ dependencies:
       command: ["python", "-m", "sigma_.update_server"]
       image: ${REGISTRY}cccs/assemblyline-service-sigma:$SERVICE_TAG
       ports: ["5003"]
+      environment:
+        - name: MAX_REQUESTS
+          value: "0"
     run_as_core: True
 
 update_config:
   generates_signatures: true
   sources:
     - name: sigma
-      pattern: .*windows\/.*\.yml
+      pattern: .*\/rules\/windows\/.*\.yml
       uri: https://github.com/SigmaHQ/sigma.git
   update_interval_seconds: 21600 # Quarter-day (every 6 hours)
   signature_delimiter: "file"
