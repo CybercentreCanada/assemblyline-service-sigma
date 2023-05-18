@@ -1,6 +1,10 @@
-from collections import defaultdict
 import json
 import tempfile
+import yaml
+
+from collections import defaultdict
+from pkg_resources import get_distribution
+from re import findall
 from typing import Dict
 
 from assemblyline.common.str_utils import safe_str
@@ -9,12 +13,10 @@ from assemblyline.odm.models.ontology.results import Process, Signature
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.request import ServiceRequest
-from assemblyline_v4_service.common.result import BODY_FORMAT, Result, ResultSection
+from assemblyline_v4_service.common.result import BODY_FORMAT, Result, ResultSection, Heuristic
 # from assemblyline_v4_service.common.dynamic_service_helper import Process as DynamicProcess - Pending changes for tags
 from pysigma.pysigma import PySigma
 from pysigma.parser import get_category
-from pkg_resources import get_distribution
-from re import findall
 
 SCORE_HEUR_MAPPING = {
     "critical": 1,
@@ -24,6 +26,8 @@ SCORE_HEUR_MAPPING = {
     "null": 5,
     None: 5
 }
+
+NOISY_STATUSES = ['test', 'experimental']
 
 
 def extract_from_events(event_json: Dict):
@@ -138,10 +142,12 @@ class Sigma(ServiceBase):
         super(Sigma, self).__init__(config)
         self.sigma_parser = PySigma()
         self.sigma_parser.hits = {}
+        self.noisy_signatures = []
         self.patterns = PatternMatch()
 
     def _load_rules(self) -> None:
         temp_list = []
+        noisy_sigs = []
         # Patch source_name into signature and import
         for rule in self.rules_list:
             with open(rule, 'r') as yaml_fh:
@@ -150,6 +156,11 @@ class Sigma(ServiceBase):
                 patched_rule = f'{file}\nsignature_source: {source_name}'
                 temp_list.append(patched_rule)
 
+                rule_yaml = yaml.safe_load(file)
+                if rule_yaml.get('status', None) in NOISY_STATUSES:
+                    noisy_sigs.append(f"{source_name}.{rule_yaml['title']}")
+
+        self.noisy_signatures = noisy_sigs
         self.log.info(f"Number of rules to be loaded: {len(temp_list)}")
         for rule in temp_list:
             try:
@@ -188,9 +199,14 @@ class Sigma(ServiceBase):
                 source = events[0]['signature_source']
                 score = events[0].get('score', None)
                 sig = f"{source}.{title}"
+                score_map = {}
                 heur_id = SCORE_HEUR_MAPPING.get(score, None)
-                if heur_id:
-                    section.set_heuristic(heur_id, attack_id=attack_id, signature=sig)
+                if sig in self.noisy_signatures:
+                    score_map = {sig: 0}
+                heuristic = Heuristic(heur_id, score_map=score_map) if heur_id else None
+
+                if heuristic:
+                    section.set_heuristic(heuristic, attack_id=attack_id, signature=sig)
                 else:
                     self.log.warning(f"Sigma rule {sig} has an invalid threat level: {score}")
                 section.add_tag("file.rule.sigma", sig)
