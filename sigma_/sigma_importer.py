@@ -32,7 +32,13 @@ class SigmaImporter:
             signature_string = open(file, 'r').read()
             signature_yaml = yaml.safe_load(signature_string)
             name = signature_yaml.get('id', None)
-            status = "DEPLOYED"
+            status = signature_yaml.get('status', 'DEPLOYED')
+            if status in ['test', 'experimental']:
+                status = 'NOISY'
+            elif status in ['deprecated', 'unsupported']:
+                status = "DISABLED"
+            else:
+                status = "DEPLOYED"
 
             sig = Signature(dict(
                 classification=default_classification or self.classification.UNRESTRICTED,
