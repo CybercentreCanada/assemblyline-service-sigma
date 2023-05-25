@@ -57,7 +57,7 @@ class SigmaImporter:
             # If we hit the batch size limit, send to API
             if order % BATCH_SIZE_LIMIT == 0:
                 self.log.info(f'Batch limit reached: {BATCH_SIZE_LIMIT}. Sending batch to Signature API..')
-                order_completed += add_update_many(source, 'suricata', upload_list, dedup_name=False)['success']
+                order_completed += add_update_many(source, 'sigma', upload_list, dedup_name=False)['success']
                 upload_list = []
 
         order_completed += add_update_many(source, 'sigma', upload_list, dedup_name=False)['success']
