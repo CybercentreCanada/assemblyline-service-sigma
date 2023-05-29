@@ -1,0 +1,4 @@
+GitPython
+assemblyline-service-utilities
+git+https://github.com/CybercentreCanada/pysigma.git
+assemblyline-client

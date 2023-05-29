@@ -1,4 +1,6 @@
 import pytest
+from assemblyline_service_utilities.common.balbuzard.patterns import PatternMatch
+from sigma_.sigma import EventDataSection
 
 
 class TestEventDataSection:
@@ -41,8 +43,6 @@ class TestEventDataSection:
              }, {"network.dynamic.uri": ["ftp://good.com/justkidding", "http://evil.com/bad"]}),
     ])
     def test_init(event, expected_tags):
-        from sigma_.sigma import EventDataSection
-        from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
         patterns = PatternMatch()
         actual_res_sec = EventDataSection(event, patterns.PAT_URI_NO_PROTOCOL)
         assert set(actual_res_sec.tags["network.dynamic.uri"]) == set(expected_tags["network.dynamic.uri"])
