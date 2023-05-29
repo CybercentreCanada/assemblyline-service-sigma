@@ -1,9 +1,8 @@
 from assemblyline.common import forge
 from assemblyline_v4_service.updater.updater import ServiceUpdater
-
-from sigma_.sigma_importer import SigmaImporter
-from pysigma.pysigma import val_file
 from pysigma.exceptions import UnsupportedFeature
+from pysigma.pysigma import val_file
+from sigma_.sigma_importer import SigmaImporter
 
 classification = forge.get_classification()
 

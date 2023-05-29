@@ -1,22 +1,22 @@
 import json
 import tempfile
-import yaml
-
 from collections import defaultdict
-from pkg_resources import get_distribution
 from re import findall
 from typing import Dict
 
-from assemblyline.common.str_utils import safe_str
+import yaml
 from assemblyline.common.attack_map import attack_map
+from assemblyline.common.str_utils import safe_str
 from assemblyline.odm.models.ontology.results import Process, Signature
+from assemblyline_service_utilities.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.request import ServiceRequest
-from assemblyline_v4_service.common.result import BODY_FORMAT, Result, ResultSection, Heuristic
+from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
+from pkg_resources import get_distribution
+from pysigma.parser import get_category
+
 # from assemblyline_v4_service.common.dynamic_service_helper import Process as DynamicProcess - Pending changes for tags
 from pysigma.pysigma import PySigma
-from pysigma.parser import get_category
 
 SCORE_HEUR_MAPPING = {
     "critical": 1,

@@ -15,9 +15,11 @@ RUN apt-get update && apt-get install -y libssl-dev && rm -rf /var/lib/apt/lists
 
 # Install PIP dependancies
 USER assemblyline
+
+# Install python dependencies
 RUN touch /tmp/before-pip
-RUN pip install git+https://github.com/CybercentreCanada/pysigma.git
-RUN pip install assemblyline-client
+COPY requirements.txt requirements.txt
+RUN pip install --no-cache-dir --user --requirement requirements.txt && rm -rf ~/.cache/pip
 
 USER root
 
