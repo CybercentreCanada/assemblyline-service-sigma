@@ -4,7 +4,6 @@ from collections import defaultdict
 from re import findall
 from typing import Dict
 
-import yaml
 from assemblyline.common.attack_map import attack_map
 from assemblyline.common.str_utils import safe_str
 from assemblyline.odm.models.ontology.results import Process, Signature
@@ -26,9 +25,6 @@ SCORE_HEUR_MAPPING = {
     "null": 5,
     None: 5
 }
-
-NOISY_STATUSES = ['test', 'experimental']
-
 
 def extract_from_events(event_json: Dict):
     system_data, event_data = None, None
@@ -142,29 +138,13 @@ class Sigma(ServiceBase):
         super(Sigma, self).__init__(config)
         self.sigma_parser = PySigma()
         self.sigma_parser.hits = {}
-        self.noisy_signatures = []
         self.patterns = PatternMatch()
 
     def _load_rules(self) -> None:
-        temp_list = []
-        noisy_sigs = []
-        # Patch source_name into signature and import
+        self.log.info(f"Number of rules to be loaded: {len(self.rules_list)}")
         for rule in self.rules_list:
-            with open(rule, 'r') as yaml_fh:
-                file = yaml_fh.read()
-                source_name = rule.split('/')[-2]
-                patched_rule = f'{file}\nsignature_source: {source_name}'
-                temp_list.append(patched_rule)
-
-                rule_yaml = yaml.safe_load(file)
-                if rule_yaml.get('status', None) in NOISY_STATUSES:
-                    noisy_sigs.append(f"{source_name}.{rule_yaml['title']}")
-
-        self.noisy_signatures = noisy_sigs
-        self.log.info(f"Number of rules to be loaded: {len(temp_list)}")
-        for rule in temp_list:
             try:
-                self.sigma_parser.add_signature(rule)
+                self.sigma_parser.add_signature(open(rule).read())
             except Exception as e:
                 self.log.warning(f"{e} | {rule}")
 
@@ -196,12 +176,12 @@ class Sigma(ServiceBase):
                         name = tag[7:]
                         if name.startswith(('t', 'g', 's')):
                             attack_id = name.upper()
-                source = events[0]['signature_source']
+                signature_meta = self.signatures_meta[id]
                 score = events[0].get('score', None)
-                sig = f"{source}.{title}"
+                sig = f"{signature_meta['source']}.{title}"
                 score_map = {}
                 heur_id = SCORE_HEUR_MAPPING.get(score, None)
-                if sig in self.noisy_signatures:
+                if signature_meta['status'] == "NOISY":
                     score_map = {sig: 0}
                 heuristic = Heuristic(heur_id, score_map=score_map) if heur_id else None
 
@@ -236,6 +216,7 @@ class Sigma(ServiceBase):
 
                     # add the event data as a subsection
                     section.add_subsection(EventDataSection(event, self.patterns.PAT_URI_NO_PROTOCOL))
+                    section.classification = signature_meta['classification']
                 hit_section.add_subsection(section)
                 s_ont = dict(name=sig, type='SIGMA', attributes=attributes)
                 if attack_id and attack_map.get('attack_id'):
