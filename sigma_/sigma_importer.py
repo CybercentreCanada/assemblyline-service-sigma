@@ -1,12 +1,10 @@
 import logging
-import os
 import yaml
 from typing import List
 
 from assemblyline.common import forge
 from assemblyline.odm.models.signature import Signature
 
-UPDATE_CONFIGURATION_PATH = os.environ.get('UPDATE_CONFIGURATION_PATH', None)
 
 class SigmaImporter:
     def __init__(self, al_client, logger=None):
