@@ -78,6 +78,7 @@ update_config:
     - name: sigma
       pattern: .*\/rules\/windows\/.*\.yml
       uri: https://github.com/SigmaHQ/sigma.git
+      sync: true
   update_interval_seconds: 21600 # Quarter-day (every 6 hours)
   signature_delimiter: "file"
   wait_for_update: true
