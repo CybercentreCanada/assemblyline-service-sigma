@@ -16,9 +16,10 @@ class SigmaUpdateServer(ServiceUpdater):
     def import_update(self, files_sha256, client, source, default_classification=classification.UNRESTRICTED):
         upload_list = []
         for file, _ in files_sha256:
-            signature_string = open(file, 'r').read()
+            with open(file, 'r') as fh:
+                signature_string = fh.read()
             signature_yaml = yaml.safe_load(signature_string)
-            name = signature_yaml.get('id', None)
+            s_id = signature_yaml['id']
             status = signature_yaml.get('status', 'DEPLOYED')
             if status in ['test', 'experimental']:
                 status = 'NOISY'
@@ -30,8 +31,8 @@ class SigmaUpdateServer(ServiceUpdater):
             sig = Signature(dict(
                 classification=default_classification or self.classification.UNRESTRICTED,
                 data=signature_string,
-                name=signature_yaml.get('title', None),
-                signature_id=name,
+                name=signature_yaml.get('title', s_id),
+                signature_id=s_id,
                 source=source,
                 status=status,
                 type="sigma",
