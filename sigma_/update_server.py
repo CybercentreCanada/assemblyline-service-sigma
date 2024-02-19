@@ -13,7 +13,7 @@ class SigmaUpdateServer(ServiceUpdater):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def import_update(self, files_sha256, client, source, default_classification=classification.UNRESTRICTED):
+    def import_update(self, files_sha256, source, default_classification=classification.UNRESTRICTED):
         upload_list = []
         for file, _ in files_sha256:
             with open(file, 'r') as fh:
@@ -40,7 +40,8 @@ class SigmaUpdateServer(ServiceUpdater):
 
             upload_list.append(sig.as_primitives())
 
-        order_completed = client.signature.add_update_many(source, 'sigma', upload_list, dedup_name=False)['success']
+        order_completed = self.client.signature.add_update_many(
+            source, 'sigma', upload_list, dedup_name=False)['success']
         self.log.info(f"Imported {order_completed} signatures from {source} into Assemblyline")
 
         return order_completed

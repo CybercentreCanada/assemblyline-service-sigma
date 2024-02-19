@@ -67,6 +67,8 @@ dependencies:
       command: ["python", "-m", "sigma_.update_server"]
       image: ${REGISTRY}cccs/assemblyline-service-sigma:$SERVICE_TAG
       ports: ["5003"]
+      cpu_cores: 2
+      ram_mb: 4096
       environment:
         - name: MAX_REQUESTS
           value: "0"
@@ -89,5 +91,5 @@ update_config:
 docker_config:
   allow_internet_access: true
   image: ${REGISTRY}cccs/assemblyline-service-sigma:$SERVICE_TAG
-  cpu_cores: 1.0
-  ram_mb: 1024
+  cpu_cores: 0.4
+  ram_mb: 512
