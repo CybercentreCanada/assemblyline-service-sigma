@@ -103,7 +103,26 @@ class EventDataSection(ResultSection):
                 if v:
                     uris = set(findall(uri_pattern, v.encode()))
                     if uris:
-                        tags["network.dynamic.uri"].extend([safe_str(uri).strip(",'") for uri in uris])
+                        for uri in uris:
+                            uri_parts = safe_str(uri).split(",'")
+                            if len(uri_parts) == 1:
+                                # No leading or trailing commas
+                                uri = uri_parts[0]
+                            elif len(uri_parts) == 2:
+                                # At least 1 leading or trailing comma
+                                if "://" in uri_parts[0]:
+                                    # Comma was trailing
+                                    uri = uri_parts[0]
+                                else:
+                                    # Comma was leading
+                                    uri = uri_parts[1]
+                            else:
+                                # There was a leading AND trailing comma
+                                uri = uri_parts[1]
+
+                            # Strip any unnecessary quoting
+                            uri = uri.strip("'").strip('"')
+                            tags["network.dynamic.uri"].append(uri.strip("'").strip('"'))
         super(EventDataSection, self).__init__(
             title_text=title, body_format=BODY_FORMAT.KEY_VALUE, body=json.dumps(body), tags=tags
         )
