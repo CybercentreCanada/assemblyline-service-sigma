@@ -13,7 +13,7 @@ class SigmaUpdateServer(ServiceUpdater):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def import_update(self, files_sha256, source, default_classification=classification.UNRESTRICTED):
+    def import_update(self, files_sha256, source, default_classification=classification.UNRESTRICTED, *args, **kwargs):
         upload_list = []
         for file, _ in files_sha256:
             with open(file, 'r') as fh:
