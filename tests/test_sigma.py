@@ -1,6 +1,6 @@
 import pytest
 from assemblyline_service_utilities.common.balbuzard.patterns import PatternMatch
-from sigma_.sigma import EventDataSection
+from sigma_.sigma_ import EventDataSection
 
 
 class TestEventDataSection:
