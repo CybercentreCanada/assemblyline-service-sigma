@@ -73,7 +73,7 @@ update_config:
   update_interval_seconds: 21600 # Quarter-day (every 6 hours)
   signature_delimiter: "file"
   wait_for_update: true
-
+  default_pattern: .*\.yml
 # Docker configuration block which defines:
 #  - the name of the docker container that will be created
 #  - cpu and ram allocation by the container
