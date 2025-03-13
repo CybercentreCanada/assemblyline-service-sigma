@@ -1,5 +1,4 @@
 import yaml
-
 from assemblyline.common import forge
 from assemblyline.odm.models.signature import Signature
 from assemblyline_v4_service.updater.updater import ServiceUpdater
@@ -10,8 +9,6 @@ classification = forge.get_classification()
 
 
 class SigmaUpdateServer(ServiceUpdater):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     def import_update(self, files_sha256, source, default_classification=classification.UNRESTRICTED, *args, **kwargs):
         upload_list = []
@@ -54,5 +51,5 @@ class SigmaUpdateServer(ServiceUpdater):
 
 
 if __name__ == '__main__':
-    with SigmaUpdateServer(default_pattern="*.yml") as server:
+    with SigmaUpdateServer() as server:
         server.serve_forever()
