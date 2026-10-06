@@ -1,13 +1,13 @@
 {
   "template": "https://github.com/CybercentreCanada/assemblyline-service-template.git",
-  "commit": "99becf8ed2990a4063a5bb1f8ce878824a5a1a7b",
+  "commit": "082ca0fe29887851cad1b54ddfbf37163b45a9cb",
   "checkout": null,
   "context": {
     "cookiecutter": {
       "service_name": "sigma",
       "__svc_name": "sigma",
       "__repository": "assemblyline-service-sigma",
-      "__pkg_name": "sigma",
+      "__pkg_name": "sigma_",
       "class_name": "Sigma",
       "short_description": "This assemblyline service automates detection of Windows Sysmon Event logs that indicate malicious behavior.",
       "short_description_fr": "Ce service en ligne automatise la détection des journaux d'événements Windows Sysmon qui indiquent un comportement malveillant.",
@@ -16,7 +16,12 @@
       "org_name_full": "CybercentreCanada",
       "org_name_short": "cccs",
       "license": "mit",
-      "_template": "https://github.com/CybercentreCanada/assemblyline-service-template.git"
+      "_extensions": [
+        "local_extensions.github_maintainer.Ext"
+      ],
+      "_template": "https://github.com/CybercentreCanada/assemblyline-service-template.git",
+      "_commit": "082ca0fe29887851cad1b54ddfbf37163b45a9cb",
+      "_github_maintainer": "cccs-rs"
     }
   },
   "directory": null
