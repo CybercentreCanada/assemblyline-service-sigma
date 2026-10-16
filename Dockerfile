@@ -2,7 +2,7 @@ ARG branch=latest
 FROM cccs/assemblyline-v4-service-base:$branch
 
 # Python path to the service class from your service directory
-ENV SERVICE_PATH sigma_.sigma_.Sigma
+ENV SERVICE_PATH=sigma_.sigma_.Sigma
 
 # Install apt dependencies
 USER root
