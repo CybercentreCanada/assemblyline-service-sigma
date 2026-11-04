@@ -1,6 +1,7 @@
 import json
 import tempfile
 from collections import defaultdict
+from importlib.metadata import version
 from re import findall
 from typing import Dict
 
@@ -11,7 +12,6 @@ from assemblyline_service_utilities.common.balbuzard.patterns import PatternMatc
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
-from pkg_resources import get_distribution
 from pysigma.parser import get_category
 
 # from assemblyline_v4_service.common.dynamic_service_helper import Process as DynamicProcess - Pending changes for tags
@@ -239,5 +239,5 @@ class Sigma(ServiceBase):
         Return the version of Pysigma used for processing
         :return:
         """
-        version_string = get_distribution("pysigma").version
+        version_string = version("pysigma")
         return f"{version_string}.r{self.rules_hash}"
